@@ -1,0 +1,45 @@
+networks:
+  higress-net:
+    driver: bridge
+
+services:
+  # 注册中心：Nacos 3.1.1
+  nacos:
+    image: nacos-registry.cn-hangzhou.cr.aliyuncs.com/nacos/nacos-server:v3.1.1
+    container_name: nacos-server
+    environment:
+      - MODE=standalone
+      - JVM_XMS=512m
+      - JVM_XMX=512m
+      # 显式指定服务器 IP，避免在复杂 Docker 环境下 IP 识别混乱
+      - NACOS_SERVER_IP=nacos
+    ports:
+      - "8848:8848"   # HTTP 控制台及 API
+      - "9848:9848"   # 客户端 gRPC 长连接 (必须)
+      - "9849:9849"   # 服务端 gRPC 同步 (3.x 推荐开启)
+    volumes:
+      - ./nacos/data:/home/nacos/data
+      - ./nacos/logs:/home/nacos/logs
+    networks:
+      - higress-net
+    restart: always
+
+  # 网关：Higress All-in-one
+  higress:
+    image: higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/all-in-one:latest
+    container_name: higress-gateway
+    environment:
+      - CONFIG_PATH=/data/conf
+      # 设置默认时区，确保日志时间对齐
+      - TZ=Asia/Shanghai
+    ports:
+      - "80:80"        # 业务 HTTP 入口
+      - "443:443"      # 业务 HTTPS 入口
+      - "8001:8001"    # Higress 控制台
+    volumes:
+      - ./higress-data:/data
+    depends_on:
+      - nacos
+    networks:
+      - higress-net
+    restart: always
