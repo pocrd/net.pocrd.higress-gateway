@@ -1,2 +1,38 @@
+# Runtime data
 higress-data
 nacos
+.qoder
+.tool-versions
+
+# WASM build cache
+.wasm-build-cache
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# Java / Maven build artifacts
+higress-plugins/*/target/
+higress-plugins/*/build/
+*.jar
+*.war
+*.ear
+*.class
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+dependency-reduced-pom.xml
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db

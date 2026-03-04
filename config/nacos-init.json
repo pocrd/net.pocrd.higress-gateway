@@ -1,0 +1,112 @@
+{
+  "services": [
+    {
+      "name": "backend-service",
+      "group": "DEFAULT_GROUP",
+      "namespace": "public",
+      "protectThreshold": 0.8,
+      "metadata": {
+        "protocol": "http",
+        "version": "1.0.0"
+      },
+      "instances": [
+        {
+          "ip": "192.168.1.100",
+          "port": 8080,
+          "weight": 100,
+          "enabled": true,
+          "healthy": true,
+          "metadata": {
+            "version": "v1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "admin-service",
+      "group": "DEFAULT_GROUP",
+      "namespace": "public",
+      "protectThreshold": 0.8,
+      "metadata": {
+        "protocol": "http",
+        "version": "1.0.0"
+      },
+      "instances": [
+        {
+          "ip": "192.168.1.101",
+          "port": 8081,
+          "weight": 100,
+          "enabled": true,
+          "healthy": true,
+          "metadata": {
+            "version": "v1"
+          }
+        }
+      ]
+    }
+  ],
+  "configs": [
+    {
+      "dataId": "higress-config",
+      "group": "higress-system",
+      "namespace": "public",
+      "type": "yaml",
+      "content": "global:\n  logLevel: info\n  enableAccessLog: true\n"
+    },
+    {
+      "dataId": "auth-plugin-config",
+      "group": "higress-system",
+      "namespace": "public",
+      "type": "json",
+      "content": "{\n  \"jwtEnabled\": true,\n  \"keyAuthEnabled\": true,\n  \"rejectUnauthorized\": true,\n  \"whitelistPaths\": [\"/health\", \"/ping\", \"/api/public\"],\n  \"jwtConfig\": {\n    \"algorithm\": \"HS256\",\n    \"secret\": \"your-256-bit-secret-key-change-in-production\",\n    \"expiresInSeconds\": 3600,\n    \"verifyExpiration\": true,\n    \"headerName\": \"Authorization\",\n    \"tokenPrefix\": \"Bearer \"\n  },\n  \"keyAuthConfig\": {\n    \"headerName\": \"X-API-Key\",\n    \"allowQueryParam\": false,\n    \"hideCredentials\": true,\n    \"keys\": {\n      \"test-api-key-12345\": {\n        \"userId\": \"user-001\",\n        \"userName\": \"Test User\",\n        \"roles\": [\"user\", \"reader\"],\n        \"expiresAt\": 0,\n        \"enabled\": true\n      },\n      \"admin-api-key-67890\": {\n        \"userId\": \"admin-001\",\n        \"userName\": \"Admin User\",\n        \"roles\": [\"admin\", \"user\"],\n        \"expiresAt\": 0,\n        \"enabled\": true\n      }\n    }\n  }\n}"
+    }
+  ],
+  "routes": [
+    {
+      "name": "public-route",
+      "match": {
+        "prefix": "/api/public"
+      },
+      "route": {
+        "cluster": "backend-service"
+      },
+      "plugins": {
+        "auth": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "protected-route",
+      "match": {
+        "prefix": "/api/v1"
+      },
+      "route": {
+        "cluster": "backend-service"
+      },
+      "plugins": {
+        "auth": {
+          "enabled": true
+        }
+      }
+    },
+    {
+      "name": "admin-route",
+      "match": {
+        "prefix": "/api/admin"
+      },
+      "route": {
+        "cluster": "admin-service"
+      },
+      "plugins": {
+        "auth": {
+          "enabled": true,
+          "config": {
+            "jwtEnabled": true,
+            "keyAuthEnabled": false
+          }
+        }
+      }
+    }
+  ]
+}

@@ -11,12 +11,16 @@ services:
       - MODE=standalone
       - JVM_XMS=512m
       - JVM_XMX=512m
-      # 显式指定服务器 IP，避免在复杂 Docker 环境下 IP 识别混乱
-      - NACOS_SERVER_IP=nacos
+      - NACOS_AUTH_ENABLE=false
+      # Nacos 3.x 启动必须项：32位字符串的 Base64 编码
+      - NACOS_AUTH_TOKEN=U2VjcmV0S2V5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5
+      - NACOS_AUTH_IDENTITY_KEY=serverIdentity
+      - NACOS_AUTH_IDENTITY_VALUE=security
     ports:
-      - "8848:8848"   # HTTP 控制台及 API
-      - "9848:9848"   # 客户端 gRPC 长连接 (必须)
-      - "9849:9849"   # 服务端 gRPC 同步 (3.x 推荐开启)
+      - "8848:8848"
+      - "8080:8080"
+      - "9848:9848"
+      - "9849:9849"
     volumes:
       - ./nacos/data:/home/nacos/data
       - ./nacos/logs:/home/nacos/logs
@@ -24,18 +28,22 @@ services:
       - higress-net
     restart: always
 
-  # 网关：Higress All-in-one
+  # 网关：Higress
   higress:
     image: higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/all-in-one:latest
     container_name: higress-gateway
     environment:
+      - KUBECONFIG=""
+      - HIGRESS_LOCAL_CONFIG_PATH=/data
       - CONFIG_PATH=/data/conf
-      # 设置默认时区，确保日志时间对齐
+      - CONFIG_SYNC_MODE=file
       - TZ=Asia/Shanghai
+      - GATEWAY_HTTP_PORT=80
+      - GATEWAY_HTTPS_PORT=443
     ports:
-      - "80:80"        # 业务 HTTP 入口
-      - "443:443"      # 业务 HTTPS 入口
-      - "8001:8001"    # Higress 控制台
+      - "80:80"
+      - "443:443"      # 已为您恢复 443 端口
+      - "8001:8001"
     volumes:
       - ./higress-data:/data
     depends_on:
