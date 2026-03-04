@@ -4,7 +4,7 @@ metadata:
   name: greeter-grpc-ingress
   namespace: higress-system
   annotations:
-    higress.io/destination: dubbo-demo-service.higress-system.svc.cluster.local:50051
+    higress.io/destination: dubbo-demo-service.DEFAULT-GROUP.public.nacos
   creationTimestamp: "2000-01-01T00:00:00Z"
   resourceVersion: "1"
 spec:
@@ -15,7 +15,7 @@ spec:
           - path: /com.pocrd.service_demo.api.GreeterServiceHttpExport
             pathType: Prefix
             backend:
-              service:
-                name: dubbo-demo-service
-                port:
-                  number: 50051
+              resource:
+                apiGroup: networking.higress.io
+                kind: McpBridge
+                name: default

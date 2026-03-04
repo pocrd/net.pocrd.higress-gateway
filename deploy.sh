@@ -32,18 +32,18 @@ echo ""
 # 步骤2：复制配置文件
 echo -e "${YELLOW}[2/3] 部署配置文件...${NC}"
 
-# 复制 Ingress 配置
+# 复制 McpBridge 配置（Nacos 服务发现）
+if [ -d "config/mcpbridges" ]; then
+    mkdir -p higress-data/mcpbridges
+    cp config/mcpbridges/*.yaml higress-data/mcpbridges/ 2>/dev/null || true
+    echo "  已复制 McpBridge 配置"
+fi
+
+# 复制 Ingress 配置（通过 McpBridge 动态引用 Nacos 服务）
 if [ -d "config/ingresses" ]; then
     mkdir -p higress-data/ingresses
     cp config/ingresses/*.yaml higress-data/ingresses/ 2>/dev/null || true
     echo "  已复制 Ingress 配置"
-fi
-
-# 复制 Service 配置
-if [ -d "config/services" ]; then
-    mkdir -p higress-data/services
-    cp config/services/*.yaml higress-data/services/ 2>/dev/null || true
-    echo "  已复制 Service 配置"
 fi
 
 # 显示插件配置
