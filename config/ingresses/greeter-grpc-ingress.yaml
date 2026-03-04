@@ -4,7 +4,7 @@ metadata:
   name: greeter-grpc-ingress
   namespace: higress-system
   annotations:
-    higress.io/destination: dubbo-demo-service.DEFAULT-GROUP.public.nacos
+    higress.io/destination: providers:com.pocrd.service_demo.api.GreeterServiceHttpExport:1.0.0:default.DEFAULT-GROUP.public.nacos
   creationTimestamp: "2000-01-01T00:00:00Z"
   resourceVersion: "1"
 spec:
