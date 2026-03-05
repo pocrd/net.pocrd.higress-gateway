@@ -18,6 +18,4 @@ spec:
     port: 8848
     nacosNamespaceId: public
     nacosGroups:
-      - DEFAULT_GROUP
-  # AI_REGISTRIES_START
-  # AI_REGISTRIES_END
+      - PUBLIC-GROUP
