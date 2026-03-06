@@ -8,7 +8,7 @@
 set -e
 
 BASE_URL="http://localhost"
-SERVICE_PATH="/com.pocrd.service_demo.api.GreeterServiceHttpExport"
+SERVICE_PATH="/api/com.pocrd.service_demo.api.GreeterServiceHttpExport"
 METHOD="greet2"
 
 echo "=============================================="

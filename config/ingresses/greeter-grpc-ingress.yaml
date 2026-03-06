@@ -12,7 +12,7 @@ spec:
   rules:
     - http:
         paths:
-          - path: /com.pocrd.service_demo.api.GreeterServiceHttpExport
+          - path: /api/com.pocrd.service_demo.api.GreeterServiceHttpExport
             pathType: Prefix
             backend:
               resource:
