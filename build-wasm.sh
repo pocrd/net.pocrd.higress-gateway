@@ -11,6 +11,11 @@ set -e
 export GO111MODULE=on
 export GOPROXY=https://goproxy.cn,direct
 
+# --- 沙箱环境：使用项目内缓存目录 ---
+export GOCACHE="${PWD}/.wasm-build-cache/go-build"
+export GOMODCACHE="${PWD}/.wasm-build-cache/go-mod"
+mkdir -p "${GOCACHE}" "${GOMODCACHE}"
+
 # --- 配置区 ---
 PLUGIN_DIR="higress-plugins"
 OUTPUT_DIR="higress-data/wasmplugins"
@@ -109,7 +114,7 @@ build_plugin() {
 
     # 2. 执行编译到 higress-data/wasmplugins/
     echo "  [2/3] 正在编译 WASM 产物..."
-    (cd "${plugin_path}" && GOOS=wasip1 GOARCH=wasm go build -buildmode=c-shared -o "../../${output_file}" .)
+    (cd "${plugin_path}" && GOOS=wasip1 GOARCH=wasm go build -ldflags="-s -w" -o "../../${output_file}" .)
 
     if [ $? -ne 0 ]; then
         echo -e "${RED}编译失败: ${plugin_name}${NC}"
