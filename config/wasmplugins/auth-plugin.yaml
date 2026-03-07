@@ -1,0 +1,18 @@
+apiVersion: extensions.higress.io/v1alpha1
+kind: WasmPlugin
+metadata:
+  name: auth-plugin
+  namespace: higress-system
+  annotations:
+    higress.io/wasm-plugin-title: auth-plugin
+    higress.io/wasm-plugin-description: Auto-generated WASM plugin
+    higress.io/wasm-plugin-built-in: "false"
+    higress.io/wasm-plugin-category: custom
+spec:
+  defaultConfigDisable: false
+  failStrategy: FAIL_OPEN
+  phase: AUTHN
+  priority: 300
+  sha256: 995b187d8267dd1736750181b7bdf02f52b0d0712f5bfdafc4d72889284713e1
+  url: file:///data/wasmplugins/auth-plugin.wasm
+  matchRules: []

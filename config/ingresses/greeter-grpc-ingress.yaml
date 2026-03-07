@@ -5,6 +5,7 @@ metadata:
   namespace: higress-system
   annotations:
     higress.io/destination: providers:com.pocrd.service_demo.api.GreeterServiceHttpExport:1.0.0:public.PUBLIC-GROUP.public.nacos
+    higress.io/wasm-plugin: auth-plugin
   creationTimestamp: "2000-01-01T00:00:00Z"
   resourceVersion: "1"
 spec:

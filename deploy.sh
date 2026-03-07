@@ -46,8 +46,15 @@ if [ -d "config/ingresses" ]; then
     echo "  已复制 Ingress 配置"
 fi
 
+# 复制 WasmPlugin 配置到 wasmplugins 目录
+if [ -d "config/wasmplugins" ]; then
+    mkdir -p higress-data/wasmplugins
+    cp config/wasmplugins/*.{yaml,wasm} higress-data/wasmplugins/ 2>/dev/null || true
+    echo "  已复制 WasmPlugin 配置"
+fi
+
 # 显示插件配置
-CONFIG_DIR="higress-data/conf"
+CONFIG_DIR="higress-data/wasmplugins"
 if [ -d "${CONFIG_DIR}" ]; then
     echo "  插件配置目录: ${CONFIG_DIR}"
     for yaml_file in ${CONFIG_DIR}/*.yaml; do

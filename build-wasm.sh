@@ -2,17 +2,19 @@
 
 # =================================================================
 # Higress WASM 插件优雅编译脚本 (Go -> WASM)
-# 适用环境: Go 1.21.13, TinyGo 0.30.0, Dubbo 3.3 体系
+# 适用环境: Go 1.24+, Higress 2.0+ 体系
 # =================================================================
 
 set -e
 
+# --- Go 代理配置 ---
+export GO111MODULE=on
+export GOPROXY=https://goproxy.cn,direct
+
 # --- 配置区 ---
-# 使用官方阿里云镜像，确保在国内 Docker 环境下拉取速度
-TINYGO_IMAGE="ghcr.io/tinygo-org/tinygo:0.30.0"
 PLUGIN_DIR="higress-plugins"
 OUTPUT_DIR="higress-data/wasmplugins"
-CACHE_DIR=".wasm-build-cache"
+CONFIG_OUTPUT_DIR="config/wasmplugins"
 
 # --- 颜色输出 ---
 RED='\033[0;31m'
@@ -25,16 +27,58 @@ usage() {
     echo "示例: $0 auth-plugin"
 }
 
-check_docker() {
-    if ! command -v docker &> /dev/null; then
-        echo -e "${RED}错误: 未检测到 Docker，请先安装。${NC}"
-        exit 1
-    fi
-}
-
 init_dirs() {
     mkdir -p "${OUTPUT_DIR}"
-    mkdir -p "${CACHE_DIR}/go-mod"
+    mkdir -p "${CONFIG_OUTPUT_DIR}"
+}
+
+# --- 检查是否需要编译 ---
+# 比较源码和产物的修改时间，避免不必要的编译
+need_rebuild() {
+    local plugin_path=$1
+    local output_file=$2
+    local config_output_file=$3
+    
+    # 根据操作系统选择 stat 参数
+    local stat_cmd="stat -c %Y"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        stat_cmd="stat -f %m"
+    fi
+    
+    # 找到最新的源码文件
+    local latest_source=$(find "${plugin_path}" \( -name "*.go" -o -name "go.mod" -o -name "go.sum" \) -exec ${stat_cmd} {} \; 2>/dev/null | sort -n | tail -1)
+    
+    # 如果无法获取源码时间，默认需要编译
+    if [ -z "${latest_source}" ]; then
+        return 0
+    fi
+    
+    # 检查 higress-data/wasmplugins/ 下的产物
+    local need_build=false
+    if [ ! -f "${output_file}" ]; then
+        need_build=true
+    else
+        local wasm_time=$(${stat_cmd} "${output_file}" 2>/dev/null)
+        if [ -z "${wasm_time}" ] || [ "${latest_source}" -gt "${wasm_time}" ]; then
+            need_build=true
+        fi
+    fi
+    
+    # 检查 config/wasmplugins/ 下的产物
+    if [ ! -f "${config_output_file}" ]; then
+        need_build=true
+    else
+        local config_wasm_time=$(${stat_cmd} "${config_output_file}" 2>/dev/null)
+        if [ -z "${config_wasm_time}" ] || [ "${latest_source}" -gt "${config_wasm_time}" ]; then
+            need_build=true
+        fi
+    fi
+    
+    if [ "$need_build" = true ]; then
+        return 0
+    fi
+    
+    return 1
 }
 
 # --- 核心编译逻辑 ---
@@ -42,6 +86,7 @@ build_plugin() {
     local plugin_name=$1
     local plugin_path="${PLUGIN_DIR}/${plugin_name}"
     local output_file="${OUTPUT_DIR}/${plugin_name}.wasm"
+    local config_output_file="${CONFIG_OUTPUT_DIR}/${plugin_name}.wasm"
 
     if [ ! -d "${plugin_path}" ]; then
         echo -e "${RED}错误: 找不到插件目录 ${plugin_path}${NC}"
@@ -50,47 +95,35 @@ build_plugin() {
 
     echo -e "${YELLOW}>>> 正在处理插件: ${plugin_name}${NC}"
 
-    # 1. 整理依赖 (go mod tidy)
-    # 使用容器环境确保依赖被正确下载到缓存目录，避免污染宿主机 go 环境
-    echo "  [1/2] 正在整理依赖 (go mod tidy)..."
-    docker run --rm \
-        -v "$(pwd):/workspace" \
-        -v "$(pwd)/${CACHE_DIR}/go-mod:/go/pkg/mod" \
-        -w "/workspace/${plugin_path}" \
-        -e GOPROXY=https://goproxy.cn,direct \
-        -e GOMODCACHE=/go/pkg/mod \
-        ${TINYGO_IMAGE} \
-        /bin/sh -c "go mod tidy"
+    # 检查是否需要重新编译
+    if ! need_rebuild "${plugin_path}" "${output_file}" "${config_output_file}"; then
+        echo -e "${GREEN}  插件已是最新，跳过编译${NC}"
+        ls -lh "${output_file}" 2>/dev/null | awk '{print "  higress-data文件大小: " $5}'
+        ls -lh "${config_output_file}" 2>/dev/null | awk '{print "  config文件大小: " $5}'
+        return 0
+    fi
 
-    # 2. 执行编译
-    # 目标平台设为 wasi (TinyGo 0.30.0 支持)
-    # 使用 leaking GC 提升网关插件性能 (Higress 推荐)
-    echo "  [2/2] 正在编译 WASM 产物..."
-    docker run --rm \
-        -v "$(pwd):/workspace" \
-        -v "$(pwd)/${CACHE_DIR}/go-mod:/go/pkg/mod" \
-        -w "/workspace/${plugin_path}" \
-        -e GOMODCACHE=/go/pkg/mod \
-        ${TINYGO_IMAGE} \
-        tinygo build -o "/workspace/${output_file}" \
-        -target=wasi \
-        -gc=leaking \
-        -no-debug \
-        -opt=2 \
-        .
+    # 1. 整理依赖
+    echo "  [1/3] 正在整理依赖 (go mod tidy)..."
+    (cd "${plugin_path}" && go mod tidy)
 
-    if [ $? -eq 0 ]; then
-        # 修正文件权限，确保宿主机当前用户可读写（针对 Linux 环境）
-        if [[ "$OSTYPE" != "darwin"* ]]; then
-            sudo chown $(id -u):$(id -g) "${output_file}" > /dev/null 2>&1 || true
-        fi
-        
-        echo -e "${GREEN}成功生成: ${output_file}${NC}"
-        ls -lh "${output_file}" | awk '{print "  文件大小: " $5}'
-    else
+    # 2. 执行编译到 higress-data/wasmplugins/
+    echo "  [2/3] 正在编译 WASM 产物..."
+    (cd "${plugin_path}" && GOOS=wasip1 GOARCH=wasm go build -buildmode=c-shared -o "../../${output_file}" .)
+
+    if [ $? -ne 0 ]; then
         echo -e "${RED}编译失败: ${plugin_name}${NC}"
         return 1
     fi
+
+    # 3. 复制到 config/wasmplugins/
+    echo "  [3/3] 正在复制到 config/wasmplugins/..."
+    cp "${output_file}" "${config_output_file}"
+
+    echo -e "${GREEN}成功生成: ${output_file}${NC}"
+    ls -lh "${output_file}" | awk '{print "  文件大小: " $5}'
+    echo -e "${GREEN}成功复制: ${config_output_file}${NC}"
+    ls -lh "${config_output_file}" | awk '{print "  文件大小: " $5}'
 }
 
 # --- 批量编译逻辑 ---
@@ -109,27 +142,22 @@ build_all_plugins() {
 }
 
 # --- 生成 WasmPlugin 配置 ---
-# 为每个插件生成独立的 .yaml 配置文件到 conf 目录
+# 在 config/wasmplugins/ 目录下生成配置文件
 generate_wasmplugin_config() {
-    local config_dir="higress-data/conf"
+    local config_dir="config/wasmplugins"
     
     mkdir -p "${config_dir}"
     
     echo -e "${YELLOW}>>> 正在生成 WasmPlugin 配置...${NC}"
     
-    for wasm_file in ${OUTPUT_DIR}/*.wasm; do
+    # 使用 config/wasmplugins/ 下的 wasm 文件计算 sha256
+    for wasm_file in ${CONFIG_OUTPUT_DIR}/*.wasm; do
         if [ -f "${wasm_file}" ]; then
             local plugin_name=$(basename "${wasm_file}" .wasm)
             local config_file="${config_dir}/${plugin_name}.yaml"
             local sha256=$(shasum -a 256 "${wasm_file}" | awk '{print $1}')
-            local file_size=$(stat -f%z "${wasm_file}" 2>/dev/null || stat -c%s "${wasm_file}" 2>/dev/null)
             
             cat > "${config_file}" << EOF
-# Higress WASM 插件配置文件
-# 由 build-wasm.sh 自动生成，请勿手动修改
-# 生成时间: $(date '+%Y-%m-%d %H:%M:%S')
-# 插件名称: ${plugin_name}
-#
 apiVersion: extensions.higress.io/v1alpha1
 kind: WasmPlugin
 metadata:
@@ -147,13 +175,9 @@ spec:
   priority: 300
   sha256: ${sha256}
   url: file:///data/wasmplugins/${plugin_name}.wasm
-  matchRules:
-  - config: {}
-    configDisable: false
-    ingress:
-    - default
+  matchRules: []
 EOF
-            echo "  已生成: ${config_file} (sha256: ${sha256:0:16}..., size: ${file_size} bytes)"
+            echo "  已生成: ${config_file}"
         fi
     done
     
@@ -162,7 +186,6 @@ EOF
 
 # --- 主入口 ---
 main() {
-    check_docker
     init_dirs
 
     echo "========================================"
@@ -181,7 +204,6 @@ main() {
     generate_wasmplugin_config
 
     echo -e "\n${GREEN}所有任务处理完毕。${NC}"
-    echo -e "${YELLOW}提示: 配置文件已生成在 higress-data/conf/wasmplugins.yaml，Higress Controller 会自动加载${NC}"
 }
 
 main "$@"
