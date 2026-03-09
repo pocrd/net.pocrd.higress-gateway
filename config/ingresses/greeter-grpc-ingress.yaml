@@ -6,10 +6,18 @@ metadata:
   annotations:
     higress.io/destination: providers:com.pocrd.service_demo.api.GreeterServiceHttpExport:1.0.0:public.PUBLIC-GROUP.public.nacos
     higress.io/wasm-plugin: auth-plugin
+    # mTLS 配置暂时禁用，仅测试 HTTPS
+    # higress.io/auth-tls-secret: higress-system/caring-ca-secret
+    # higress.io/auth-tls-verify-depth: "2"
+    # higress.io/auth-tls-verify-client: "optional"
   creationTimestamp: "2000-01-01T00:00:00Z"
   resourceVersion: "1"
 spec:
   ingressClassName: higress
+  # tls:
+  #   - hosts:
+  #       - localhost
+  #     secretName: https-server-secret
   rules:
     - http:
         paths:

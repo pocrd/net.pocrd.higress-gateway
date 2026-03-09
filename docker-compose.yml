@@ -27,10 +27,16 @@ services:
     networks:
       - higress-net
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+        reservations:
+          memory: 512M
 
   # 网关：Higress
   higress:
-    image: higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/all-in-one:latest
+    image: higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/all-in-one:2.1.11
     container_name: higress-gateway
     environment:
       - KUBECONFIG=""
@@ -42,7 +48,7 @@ services:
       - GATEWAY_HTTPS_PORT=443
     ports:
       - "80:80"
-      - "443:443"      # 已为您恢复 443 端口
+      - "443:443"
       - "8001:8001"
     volumes:
       - ./higress-data:/data
@@ -51,3 +57,9 @@ services:
     networks:
       - higress-net
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M

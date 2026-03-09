@@ -32,7 +32,7 @@ func parseConfig(json gjson.Result, config *AuthConfig, log log.Log) error {
 
 func onHttpRequestHeaders(ctx wrapper.HttpContext, config AuthConfig, log log.Log) types.Action {
 	path, _ := proxywasm.GetHttpRequestHeader(":path")
-	log.Warnf("[auth] path=%s", path)
+	log.Warnf("[auth]  path=%s", path)
 
 	// --- 1. 设备级别：证书 CN 提取 ---
 	xfcc, _ := proxywasm.GetHttpRequestHeader("x-forwarded-client-cert")

@@ -46,6 +46,13 @@ if [ -d "config/ingresses" ]; then
     echo "  已复制 Ingress 配置"
 fi
 
+# 复制 Secrets 配置（CA证书等）
+if [ -d "config/secrets" ]; then
+    mkdir -p higress-data/secrets
+    cp config/secrets/*.yaml higress-data/secrets/ 2>/dev/null || true
+    echo "  已复制 Secrets 配置"
+fi
+
 # 复制 WasmPlugin 配置到 wasmplugins 目录
 if [ -d "config/wasmplugins" ]; then
     mkdir -p higress-data/wasmplugins
