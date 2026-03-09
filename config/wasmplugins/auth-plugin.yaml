@@ -13,8 +13,6 @@ spec:
   failStrategy: FAIL_OPEN
   phase: AUTHN
   priority: 300
-  sha256: 2cd65201f8f809969dc00af89dc6c4ad57abe6e4bc8b1eb7a631060586ef9b4d
+  sha256: 97ed8c717f04f5b41e8c14e71d07572a1162ce42ebe08aec63d1b690942e6a00
   url: file:///data/wasmplugins/auth-plugin.wasm
-  defaultConfig:
-    enabled_optional_cert: true
   matchRules: []

@@ -14,12 +14,13 @@ metadata:
   resourceVersion: "1"
 spec:
   ingressClassName: higress
-  # tls:
-  #   - hosts:
-  #       - localhost
-  #     secretName: https-server-secret
+  tls:
+    - hosts:
+        - www.caringfamily.cn
+      secretName: https-server-secret
   rules:
-    - http:
+    - host: www.caringfamily.cn
+      http:
         paths:
           - path: /api/com.pocrd.service_demo.api.GreeterServiceHttpExport
             pathType: Prefix

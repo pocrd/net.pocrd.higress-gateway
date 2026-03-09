@@ -53,6 +53,13 @@ if [ -d "config/secrets" ]; then
     echo "  已复制 Secrets 配置"
 fi
 
+# 复制 ConfigMaps 配置（HTTPS 等）
+if [ -d "config/configmaps" ]; then
+    mkdir -p higress-data/configmaps
+    cp config/configmaps/*.yaml higress-data/configmaps/ 2>/dev/null || true
+    echo "  已复制 ConfigMaps 配置"
+fi
+
 # 复制 WasmPlugin 配置到 wasmplugins 目录
 if [ -d "config/wasmplugins" ]; then
     mkdir -p higress-data/wasmplugins

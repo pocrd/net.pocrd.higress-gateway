@@ -36,3 +36,5 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+certs/third-assigned

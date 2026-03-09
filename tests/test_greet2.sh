@@ -7,7 +7,7 @@
 
 set -e
 
-BASE_URL="http://localhost"
+BASE_URL="http://www.caringfamily.cn"
 SERVICE_PATH="/api/com.pocrd.service_demo.api.GreeterServiceHttpExport"
 METHOD="greet2"
 
@@ -34,7 +34,11 @@ echo ""
 RESPONSE=$(curl -s --max-time 10 --http2-prior-knowledge -X POST \
   "${BASE_URL}${SERVICE_PATH}/${METHOD}" \
   -H "Content-Type: application/json" \
-  -d "$REQUEST_BODY")
+  -d "$REQUEST_BODY" \
+  --resolve "www.caringfamily.cn:80:127.0.0.1" 2>&1) || {
+    echo "❌ 请求失败: $RESPONSE"
+    exit 1
+}
 
 echo "响应结果:"
 echo "$RESPONSE"
