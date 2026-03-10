@@ -19,13 +19,13 @@ if [ $# -lt 3 ]; then
 fi
 
 CA_NAME="$1"
-SERVER_NAME="$2"
+FACTORY_NAME="$2"
 THIRD_PARAM="$3"
 
 CERT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CA_DIR="${CERT_DIR}/files/${CA_NAME}"
-SERVER_DIR="${CA_DIR}/${SERVER_NAME}"
-DEVICES_DIR="${SERVER_DIR}/devices"
+FACTORY_DIR="${CA_DIR}/${FACTORY_NAME}"
+DEVICES_DIR="${FACTORY_DIR}/devices"
 
 DAYS=3650
 # 使用 ECDSA P-256 椭圆曲线算法
@@ -45,19 +45,31 @@ if [ ! -f "${CA_KEY_PATH}" ]; then
     exit 1
 fi
 
-# 检查服务器证书是否存在
-SERVER_CERT_PATH="${SERVER_DIR}/${SERVER_NAME}.crt"
-SERVER_KEY_PATH="${SERVER_DIR}/${SERVER_NAME}.key"
+# 工厂证书是否存在
+FACTORY_CERT_PATH="${FACTORY_DIR}/${FACTORY_NAME}.crt"
+FACTORY_KEY_PATH="${FACTORY_DIR}/${FACTORY_NAME}.key"
 
-if [ ! -f "${SERVER_CERT_PATH}" ]; then
-    echo "错误: 服务器证书文件不存在: ${SERVER_CERT_PATH}"
+if [ ! -f "${FACTORY_CERT_PATH}" ]; then
+    echo "错误: 工厂证书文件不存在: ${FACTORY_CERT_PATH}"
     exit 1
 fi
 
-if [ ! -f "${SERVER_KEY_PATH}" ]; then
-    echo "错误: 服务器私钥文件不存在: ${SERVER_KEY_PATH}"
+if [ ! -f "${FACTORY_KEY_PATH}" ]; then
+    echo "错误: 工厂私钥文件不存在: ${FACTORY_KEY_PATH}"
     exit 1
 fi
+
+# 验证工厂证书是否包含 CA 扩展
+echo "验证工厂证书 CA 扩展..."
+if ! openssl x509 -in "${FACTORY_CERT_PATH}" -text -noout | grep -q "CA:TRUE"; then
+    echo "  ✗ 错误: 工厂证书缺少 CA:TRUE 扩展"
+    echo ""
+    echo "说明: 必须使用带有 CA 扩展的证书才能签发设备证书。"
+    echo "请使用 factory-create.sh 创建工厂证书，而不是 server-create.sh"
+    echo ""
+    exit 1
+fi
+echo "  ✓ 工厂证书包含 CA:TRUE 扩展"
 
 # 创建设备证书的函数
 create_device_cert() {
@@ -77,7 +89,7 @@ create_device_cert() {
     local DEVICE_FULLCHAIN="${DEVICE_DIR}/${DEVICE_ID}-fullchain.crt"
     
     # 证书信息
-    local DEVICE_SUBJECT="/C=CN/ST=Shanghai/L=Shanghai/O=${CA_NAME}/OU=${SERVER_NAME}/CN=${DEVICE_ID}"
+    local DEVICE_SUBJECT="/C=CN/ST=Shanghai/L=Shanghai/O=${CA_NAME}/OU=${FACTORY_NAME}/CN=${DEVICE_ID}"
     
     # 生成设备私钥（ECDSA）
     openssl ecparam -genkey -name ${EC_CURVE} -out "${DEVICE_KEY}" 2>/dev/null
@@ -85,12 +97,12 @@ create_device_cert() {
     # 生成设备证书请求
     openssl req -new -key "${DEVICE_KEY}" -out "${DEVICE_CSR}" -subj "${DEVICE_SUBJECT}" 2>/dev/null
     
-    # 使用 CA 签发设备证书
-    openssl x509 -req -in "${DEVICE_CSR}" -CA "${CA_CERT_PATH}" -CAkey "${CA_KEY_PATH}" \
+    # 使用 中间CA 签发设备证书
+    openssl x509 -req -in "${DEVICE_CSR}" -CA "${FACTORY_CERT_PATH}" -CAkey "${FACTORY_KEY_PATH}" \
         -CAcreateserial -out "${DEVICE_CERT}" -days ${DAYS} 2>/dev/null
     
     # 生成设备完整证书链（设备证书 + 服务器证书 + CA证书）
-    cat "${DEVICE_CERT}" "${SERVER_CERT_PATH}" "${CA_CERT_PATH}" > "${DEVICE_FULLCHAIN}"
+    cat "${DEVICE_CERT}" "${FACTORY_CERT_PATH}" > "${DEVICE_FULLCHAIN}"
     
     # 清理临时文件
     rm -f "${DEVICE_CSR}"
