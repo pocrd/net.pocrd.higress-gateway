@@ -23,13 +23,6 @@ VALUES_FILE="./values.yaml"
 WASM_PLUGINS_DIR="config/wasmplugins"
 K8S_MANIFESTS_DIR="./k8s"
 
-# 解析参数
-FRESH_DEPLOY=false
-if [ "$1" == "--fresh" ]; then
-    FRESH_DEPLOY=true
-    echo -e "${YELLOW}注意: 使用强制重新部署模式${NC}"
-fi
-
 # 检查依赖
 check_dependencies() {
     local missing=()
@@ -114,39 +107,32 @@ verify_chart() {
     echo ""
 }
 
-# 清理已存在的 release 和命名空间（仅在 --fresh 模式下使用）
-cleanup_existing() {
-    local release_name=$1
-    local namespace=$2
+# 清理手动创建的资源（保留 Helm 模板生成的系统配置）
+cleanup_manual_resources() {
+    local namespace=$1
     
-    # 检查所有命名空间中是否存在同名 release
-    local existing_ns=$(helm list --all-namespaces -q -f "^${release_name}$" | head -1)
-    if [ -n "${existing_ns}" ]; then
-        echo "  发现已存在的 Helm release '${release_name}'，正在清理..."
-        helm uninstall "${release_name}" --wait 2>/dev/null || true
-        echo "  已删除旧 release"
-    fi
+    echo "  清理手动创建的资源..."
     
-    # 检查命名空间是否正在终止
-    if kubectl get namespace "${namespace}" 2>/dev/null | grep -q "Terminating"; then
-        echo "  命名空间 ${namespace} 正在终止，等待清理完成..."
-        while kubectl get namespace "${namespace}" 2>/dev/null | grep -q "Terminating"; do
-            sleep 2
-        done
-        echo "  命名空间清理完成"
-    fi
+    # 删除手动创建的 Ingress（Helm 创建的 Ingress 通常有 managed-by 标签）
+    kubectl delete ingress -n "${namespace}" -l "app.kubernetes.io/managed-by!=Helm" --ignore-not-found=true 2>/dev/null || true
     
-    # 如果命名空间存在但不在终止状态，询问是否删除
-    if kubectl get namespace "${namespace}" 2>/dev/null >/dev/null; then
-        echo "  命名空间 ${namespace} 已存在"
-        # 检查是否有其他资源
-        local resource_count=$(kubectl get all -n "${namespace}" --no-headers 2>/dev/null | wc -l)
-        if [ "${resource_count}" -gt 0 ]; then
-            echo "  检测到 ${resource_count} 个资源，执行强制清理..."
-            kubectl delete all --all -n "${namespace}" --wait=false 2>/dev/null || true
-            sleep 3
-        fi
-    fi
+    # 删除 HTTPRoute 资源（Gateway API）- 通常是手动创建的
+    kubectl delete httproute --all -n "${namespace}" --ignore-not-found=true 2>/dev/null || true
+    
+    # 删除手动创建的 WasmPlugin（Helm 创建的通常有 managed-by 标签）
+    kubectl delete wasmplugin -n "${namespace}" -l "app.kubernetes.io/managed-by!=Helm" --ignore-not-found=true 2>/dev/null || true
+    
+    # 删除手动创建的 McpBridge（Helm 创建的通常有 managed-by 标签）
+    kubectl delete mcpbridge -n "${namespace}" -l "app.kubernetes.io/managed-by!=Helm" --ignore-not-found=true 2>/dev/null || true
+    
+    # 删除手动创建的 ConfigMap（保留 Helm 和系统生成的）
+    kubectl delete configmap higress-https -n "${namespace}" --ignore-not-found=true 2>/dev/null || true
+    
+    # 删除手动创建的 Secret（保留 Helm 和系统生成的 CA 证书）
+    kubectl delete secret https-server-secret https-server-secret-cacert -n "${namespace}" --ignore-not-found=true 2>/dev/null || true
+    
+    # 删除其他非 Helm 管理的资源
+    kubectl delete pods,services,deployments,statefulsets -n "${namespace}" -l "app.kubernetes.io/managed-by!=Helm" --wait=false 2>/dev/null || true
 }
 
 # 步骤4：部署到 Kubernetes
@@ -160,11 +146,8 @@ deploy_helm() {
     echo "  命名空间: ${namespace}"
     echo "  Chart: ${HELM_CHART}"
     
-    # 仅在 --fresh 模式下清理已存在的资源
-    if [ "$FRESH_DEPLOY" = true ]; then
-        echo -e "  ${YELLOW}强制重新部署模式：清理已存在的资源...${NC}"
-        cleanup_existing "${release_name}" "${namespace}"
-    fi
+    # 清理手动创建的资源（保留 Helm 管理的系统配置）
+    cleanup_manual_resources "${namespace}"
     
     # 使用官方 Chart 部署
     echo "  执行 helm upgrade --install..."
