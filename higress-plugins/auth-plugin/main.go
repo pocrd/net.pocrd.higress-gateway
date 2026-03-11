@@ -15,8 +15,8 @@ func main() {}
 func init() {
 	wrapper.SetCtx(
 		"poc-auth-plugin",
-		wrapper.ParseConfigBy(parseConfig),
-		wrapper.ProcessRequestHeadersBy(onHttpRequestHeaders),
+		wrapper.ParseConfig[AuthConfig](parseConfig),
+		wrapper.ProcessRequestHeaders[AuthConfig](onHttpRequestHeaders),
 	)
 }
 
@@ -25,42 +25,27 @@ type AuthConfig struct {
 	EnabledOptionalCert bool `json:"enabled_optional_cert"`
 }
 
-func parseConfig(json gjson.Result, config *AuthConfig, log log.Log) error {
+func parseConfig(json gjson.Result, config *AuthConfig) error {
 	config.EnabledOptionalCert = json.Get("enabled_optional_cert").Bool()
 	return nil
 }
 
-func onHttpRequestHeaders(ctx wrapper.HttpContext, config AuthConfig, log log.Log) types.Action {
-	path, _ := proxywasm.GetHttpRequestHeader(":path")
-	log.Warnf("[auth]  path=%s", path)
-
+func onHttpRequestHeaders(ctx wrapper.HttpContext, config AuthConfig) types.Action {
 	// --- 1. 设备级别：证书 CN 提取 ---
 	//从 XFCC (x-forwarded-client-cert) 头提取客户端证书信息
 	xfcc, _ := proxywasm.GetHttpRequestHeader("x-forwarded-client-cert")
 	if xfcc != "" {
-		log.Warnf("[auth] xfcc=%s", xfcc)
+		log.Warnf("xfcc raw: %s", xfcc)
 		cn := extractField(xfcc, "CN=")
 		if cn != "" {
-			log.Warnf("[auth] device=%s", cn)
+			log.Warnf("extracted cn: [%s]", cn)
 			proxywasm.ReplaceHttpRequestHeader("x-dubbo-device-id", cn)
 		}
 	}
-	// hs, _ := proxywasm.GetHttpRequestHeaders()
-	// for _, h := range hs {
-	// 	proxywasm.LogWarnf("[auth] header: %s = %s", h[0], h[1])
-	// }
 
-	// --- 2. 企业级别：合作伙伴签名 ---
-	partnerID, _ := proxywasm.GetHttpRequestHeader("X-Partner-Id")
-	if partnerID != "" {
-		log.Warnf("[auth] partner=%s", partnerID)
-		proxywasm.ReplaceHttpRequestHeader("x-dubbo-partner-id", partnerID)
-	}
-
-	// --- 3. 用户级别：Token 提取 ---
+	// --- 2. 用户级别：Token 提取 ---
 	authHeader, _ := proxywasm.GetHttpRequestHeader("Authorization")
 	if strings.HasPrefix(authHeader, "Bearer ") {
-		log.Warnf("[auth] token=ok")
 		proxywasm.ReplaceHttpRequestHeader("x-dubbo-user-id", "parsed-from-token")
 	}
 
@@ -73,9 +58,20 @@ func extractField(xfcc, field string) string {
 		return ""
 	}
 	start := strings.Index(xfcc, field) + len(field)
-	end := strings.Index(xfcc[start:], ";")
+	// XFCC 中的逗号可能被 URL 编码为 %2C
+	// 先尝试找普通逗号
+	end := strings.Index(xfcc[start:], ",")
+	// 再找 URL 编码的逗号 %2C
 	if end == -1 {
-		end = strings.Index(xfcc[start:], ",")
+		end = strings.Index(xfcc[start:], "%2C")
+	}
+	// 再找分号
+	if end == -1 {
+		end = strings.Index(xfcc[start:], ";")
+	}
+	// 再找双引号结束
+	if end == -1 {
+		end = strings.Index(xfcc[start:], "\"")
 	}
 	if end == -1 {
 		end = len(xfcc[start:])
