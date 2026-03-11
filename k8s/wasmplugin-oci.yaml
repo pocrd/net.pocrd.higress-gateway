@@ -25,7 +25,7 @@ spec:
   # 匹配条件（可选，为空则应用到所有路由）
   matchRules:
     - ingress:
-        - greeter-route  # 匹配指定的 HTTPRoute 名称
+        - greeter-ingress  # 匹配指定的 Ingress 名称
   
   # 插件配置（JSON 格式，会传递给插件的 OnPluginStart）
   # defaultConfig:
