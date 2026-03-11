@@ -18,8 +18,7 @@ mkdir -p "${GOCACHE}" "${GOMODCACHE}"
 
 # --- 配置区 ---
 PLUGIN_DIR="higress-plugins"
-OUTPUT_DIR="higress-data/wasmplugins"
-CONFIG_OUTPUT_DIR="config/wasmplugins"
+OUTPUT_DIR="config/wasmplugins"
 
 # --- 颜色输出 ---
 RED='\033[0;31m'
@@ -34,7 +33,6 @@ usage() {
 
 init_dirs() {
     mkdir -p "${OUTPUT_DIR}"
-    mkdir -p "${CONFIG_OUTPUT_DIR}"
 }
 
 # --- 检查是否需要编译 ---
@@ -42,7 +40,6 @@ init_dirs() {
 need_rebuild() {
     local plugin_path=$1
     local output_file=$2
-    local config_output_file=$3
     
     # 根据操作系统选择 stat 参数
     local stat_cmd="stat -c %Y"
@@ -58,28 +55,13 @@ need_rebuild() {
         return 0
     fi
     
-    # 检查 higress-data/wasmplugins/ 下的产物
-    local need_build=false
+    # 检查产物是否需要重新编译
     if [ ! -f "${output_file}" ]; then
-        need_build=true
-    else
-        local wasm_time=$(${stat_cmd} "${output_file}" 2>/dev/null)
-        if [ -z "${wasm_time}" ] || [ "${latest_source}" -gt "${wasm_time}" ]; then
-            need_build=true
-        fi
+        return 0
     fi
     
-    # 检查 config/wasmplugins/ 下的产物
-    if [ ! -f "${config_output_file}" ]; then
-        need_build=true
-    else
-        local config_wasm_time=$(${stat_cmd} "${config_output_file}" 2>/dev/null)
-        if [ -z "${config_wasm_time}" ] || [ "${latest_source}" -gt "${config_wasm_time}" ]; then
-            need_build=true
-        fi
-    fi
-    
-    if [ "$need_build" = true ]; then
+    local wasm_time=$(${stat_cmd} "${output_file}" 2>/dev/null)
+    if [ -z "${wasm_time}" ] || [ "${latest_source}" -gt "${wasm_time}" ]; then
         return 0
     fi
     
@@ -91,7 +73,6 @@ build_plugin() {
     local plugin_name=$1
     local plugin_path="${PLUGIN_DIR}/${plugin_name}"
     local output_file="${OUTPUT_DIR}/${plugin_name}.wasm"
-    local config_output_file="${CONFIG_OUTPUT_DIR}/${plugin_name}.wasm"
 
     if [ ! -d "${plugin_path}" ]; then
         echo -e "${RED}错误: 找不到插件目录 ${plugin_path}${NC}"
@@ -101,19 +82,18 @@ build_plugin() {
     echo -e "${YELLOW}>>> 正在处理插件: ${plugin_name}${NC}"
 
     # 检查是否需要重新编译
-    if ! need_rebuild "${plugin_path}" "${output_file}" "${config_output_file}"; then
+    if ! need_rebuild "${plugin_path}" "${output_file}"; then
         echo -e "${GREEN}  插件已是最新，跳过编译${NC}"
-        ls -lh "${output_file}" 2>/dev/null | awk '{print "  higress-data文件大小: " $5}'
-        ls -lh "${config_output_file}" 2>/dev/null | awk '{print "  config文件大小: " $5}'
+        ls -lh "${output_file}" 2>/dev/null | awk '{print "  文件大小: " $5}'
         return 0
     fi
 
     # 1. 整理依赖
-    echo "  [1/3] 正在整理依赖 (go mod tidy)..."
+    echo "  [1/2] 正在整理依赖 (go mod tidy)..."
     (cd "${plugin_path}" && go mod tidy)
 
-    # 2. 执行编译到 higress-data/wasmplugins/
-    echo "  [2/3] 正在编译 WASM 产物..."
+    # 2. 执行编译
+    echo "  [2/2] 正在编译 WASM 产物..."
     (cd "${plugin_path}" && GOOS=wasip1 GOARCH=wasm go build -buildmode=c-shared -o "../../${output_file}" .)
 
     if [ $? -ne 0 ]; then
@@ -121,14 +101,8 @@ build_plugin() {
         return 1
     fi
 
-    # 3. 复制到 config/wasmplugins/
-    echo "  [3/3] 正在复制到 config/wasmplugins/..."
-    cp "${output_file}" "${config_output_file}"
-
     echo -e "${GREEN}成功生成: ${output_file}${NC}"
     ls -lh "${output_file}" | awk '{print "  文件大小: " $5}'
-    echo -e "${GREEN}成功复制: ${config_output_file}${NC}"
-    ls -lh "${config_output_file}" | awk '{print "  文件大小: " $5}'
 }
 
 # --- 批量编译逻辑 ---
@@ -146,47 +120,80 @@ build_all_plugins() {
     done
 }
 
-# --- 生成 WasmPlugin 配置 ---
-# 在 config/wasmplugins/ 目录下生成配置文件
-generate_wasmplugin_config() {
-    local config_dir="config/wasmplugins"
+# --- 输出 sha256 值 ---
+# 用于 Helm values 配置
+print_sha256() {
+    echo -e "${YELLOW}>>> WASM 插件 sha256 值:${NC}"
     
-    mkdir -p "${config_dir}"
-    
-    echo -e "${YELLOW}>>> 正在生成 WasmPlugin 配置...${NC}"
-    
-    # 使用 config/wasmplugins/ 下的 wasm 文件计算 sha256
-    for wasm_file in ${CONFIG_OUTPUT_DIR}/*.wasm; do
+    for wasm_file in ${OUTPUT_DIR}/*.wasm; do
         if [ -f "${wasm_file}" ]; then
             local plugin_name=$(basename "${wasm_file}" .wasm)
-            local config_file="${config_dir}/${plugin_name}.yaml"
             local sha256=$(shasum -a 256 "${wasm_file}" | awk '{print $1}')
             
-            cat > "${config_file}" << EOF
-apiVersion: extensions.higress.io/v1alpha1
-kind: WasmPlugin
-metadata:
-  name: ${plugin_name}
-  namespace: higress-system
-  annotations:
-    higress.io/wasm-plugin-title: ${plugin_name}
-    higress.io/wasm-plugin-description: Auto-generated WASM plugin
-    higress.io/wasm-plugin-built-in: "false"
-    higress.io/wasm-plugin-category: custom
-spec:
-  defaultConfigDisable: false
-  failStrategy: FAIL_OPEN
-  phase: AUTHN
-  priority: 300
-  sha256: ${sha256}
-  url: file:///data/wasmplugins/${plugin_name}.wasm
-  matchRules: []
-EOF
-            echo "  已生成: ${config_file}"
+            echo "  ${plugin_name}:"
+            echo "    sha256: ${sha256}"
+        fi
+    done
+}
+
+# --- OCI 镜像推送 ---
+# 配置
+REGISTRY="${REGISTRY:-localhost:5001}"
+REPOSITORY_PREFIX="wasm-plugins"
+OCI_TAG="${OCI_TAG:-v1.0.0}"
+
+# 检查 oras 是否安装
+check_oras() {
+    if ! command -v oras &> /dev/null; then
+        echo -e "${YELLOW}警告: 未安装 oras，跳过 OCI 镜像推送${NC}"
+        echo "安装 oras: brew install oras"
+        return 1
+    fi
+    return 0
+}
+
+# 推送单个插件到 OCI 仓库
+push_oci_image() {
+    local wasm_file=$1
+    local plugin_name=$(basename "$wasm_file" .wasm)
+    local image_url="${REGISTRY}/${REPOSITORY_PREFIX}/${plugin_name}:${OCI_TAG}"
+    
+    echo -e "${YELLOW}  推送 OCI 镜像: ${plugin_name}${NC}"
+    echo "    镜像: ${image_url}"
+    
+    if oras push "${image_url}" \
+        --artifact-type "application/vnd.wasm.config.v1+json" \
+        "${wasm_file}:application/vnd.wasm.content.layer.v1+wasm" 2>/dev/null; then
+        echo -e "    ${GREEN}成功: ${image_url}${NC}"
+        echo "    在 k8s/wasmplugin-oci.yaml 中使用:"
+        echo "      url: oci://${image_url}"
+    else
+        echo -e "    ${RED}失败: ${image_url}${NC}"
+        return 1
+    fi
+}
+
+# 推送所有插件
+push_all_oci() {
+    echo ""
+    echo -e "${YELLOW}>>> 推送 OCI 镜像...${NC}"
+    
+    if ! check_oras; then
+        return
+    fi
+    
+    local found=false
+    for wasm_file in ${OUTPUT_DIR}/*.wasm; do
+        if [ -f "$wasm_file" ]; then
+            found=true
+            push_oci_image "$wasm_file"
+            echo ""
         fi
     done
     
-    echo -e "${GREEN}所有配置文件已生成到: ${config_dir}/${NC}"
+    if [ "$found" = false ]; then
+        echo "  未找到 WASM 插件文件"
+    fi
 }
 
 # --- 主入口 ---
@@ -194,21 +201,64 @@ main() {
     init_dirs
 
     echo "========================================"
-    echo "    Higress WASM 构建工具 (No-Hack 版)"
+    echo "    Higress WASM 构建工具"
     echo "========================================"
 
-    if [ -z "$1" ]; then
+    # 解析参数
+    local skip_oci=false
+    local plugin_name=""
+    
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --skip-oci)
+                skip_oci=true
+                shift
+                ;;
+            --oci-only)
+                push_all_oci
+                exit 0
+                ;;
+            -h|--help)
+                echo "用法: $0 [选项] [插件名称]"
+                echo ""
+                echo "选项:"
+                echo "  --skip-oci    跳过 OCI 镜像推送"
+                echo "  --oci-only    仅推送 OCI 镜像（不编译）"
+                echo "  -h, --help    显示帮助"
+                echo ""
+                echo "环境变量:"
+                echo "  REGISTRY      OCI 仓库地址 (默认: localhost:5000)"
+                echo "  OCI_TAG       OCI 镜像标签 (默认: v1.0.0)"
+                exit 0
+                ;;
+            *)
+                plugin_name=$1
+                shift
+                ;;
+        esac
+    done
+
+    # 编译插件
+    if [ -z "$plugin_name" ]; then
         echo -e "${YELLOW}未指定插件，将尝试编译所有插件...${NC}\n"
         build_all_plugins
     else
-        build_plugin "$1"
+        build_plugin "$plugin_name"
     fi
 
-    # 编译完成后自动生成 WasmPlugin 配置
+    # 输出 sha256
     echo ""
-    generate_wasmplugin_config
+    print_sha256
 
-    echo -e "\n${GREEN}所有任务处理完毕。${NC}"
+    # 推送 OCI 镜像
+    if [ "$skip_oci" = false ]; then
+        push_all_oci
+    fi
+
+    echo ""
+    echo -e "${GREEN}所有任务处理完毕。${NC}"
+    echo ""
+    echo "提示: 运行 ./deploy.sh 部署到 Kubernetes"
 }
 
 main "$@"

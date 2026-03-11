@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nacos
+  namespace: higress-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nacos
+  namespace: higress-system
+  labels:
+    app.kubernetes.io/name: nacos
+spec:
+  type: NodePort
+  ports:
+    - port: 8848
+      targetPort: 8848
+      nodePort: 30848
+      name: http
+    - port: 9848
+      targetPort: 9848
+      nodePort: 31848
+      name: grpc
+    - port: 9849
+      targetPort: 9849
+      nodePort: 31849
+      name: grpc2
+  selector:
+    app.kubernetes.io/name: nacos
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nacos
+  namespace: higress-system
+  labels:
+    app.kubernetes.io/name: nacos
+spec:
+  serviceName: nacos
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nacos
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nacos
+    spec:
+      serviceAccountName: nacos
+      containers:
+        - name: nacos
+          image: nacos-registry.cn-hangzhou.cr.aliyuncs.com/nacos/nacos-server:v3.1.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8848
+              name: http
+            - containerPort: 9848
+              name: grpc
+            - containerPort: 9849
+              name: grpc2
+          env:
+            - name: MODE
+              value: "standalone"
+            - name: TZ
+              value: "Asia/Shanghai"
+            - name: NACOS_AUTH_ENABLE
+              value: "false"
+            - name: NACOS_AUTH_TOKEN
+              value: "U2VjcmV0S2V5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5"
+            - name: NACOS_AUTH_IDENTITY_KEY
+              value: "serverIdentity"
+            - name: NACOS_AUTH_IDENTITY_VALUE
+              value: "security"
+          resources:
+            requests:
+              memory: 512Mi
+            limits:
+              memory: 1.5Gi
+          volumeMounts:
+            - name: data
+              mountPath: /home/nacos/data
+            - name: logs
+              mountPath: /home/nacos/logs
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}

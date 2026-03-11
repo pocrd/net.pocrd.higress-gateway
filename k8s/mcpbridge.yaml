@@ -1,0 +1,26 @@
+apiVersion: networking.higress.io/v1
+kind: McpBridge
+metadata:
+  name: default
+  namespace: higress-system
+  labels:
+    app.kubernetes.io/name: higress
+    app.kubernetes.io/component: mcpbridge
+  # 用于强制覆盖已存在的资源
+  creationTimestamp: "2000-01-01T00:00:00Z"
+  resourceVersion: "1"
+spec:
+  registries:
+  # Higress Console 静态配置
+  - domain: 127.0.0.1:8001
+    name: higress-console
+    port: 80
+    type: static
+  # Nacos 注册中心配置
+  - name: nacos
+    type: nacos2
+    domain: nacos
+    port: 8848
+    nacosNamespaceId: public
+    nacosGroups:
+      - PUBLIC-GROUP

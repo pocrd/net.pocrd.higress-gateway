@@ -35,14 +35,20 @@ func onHttpRequestHeaders(ctx wrapper.HttpContext, config AuthConfig, log log.Lo
 	log.Warnf("[auth]  path=%s", path)
 
 	// --- 1. 设备级别：证书 CN 提取 ---
+	//从 XFCC (x-forwarded-client-cert) 头提取客户端证书信息
 	xfcc, _ := proxywasm.GetHttpRequestHeader("x-forwarded-client-cert")
 	if xfcc != "" {
+		log.Warnf("[auth] xfcc=%s", xfcc)
 		cn := extractField(xfcc, "CN=")
 		if cn != "" {
 			log.Warnf("[auth] device=%s", cn)
 			proxywasm.ReplaceHttpRequestHeader("x-dubbo-device-id", cn)
 		}
 	}
+	// hs, _ := proxywasm.GetHttpRequestHeaders()
+	// for _, h := range hs {
+	// 	proxywasm.LogWarnf("[auth] header: %s = %s", h[0], h[1])
+	// }
 
 	// --- 2. 企业级别：合作伙伴签名 ---
 	partnerID, _ := proxywasm.GetHttpRequestHeader("X-Partner-Id")

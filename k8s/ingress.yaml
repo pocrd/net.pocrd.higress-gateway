@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: greeter-ingress
+  namespace: higress-system
+  annotations:
+    higress.io/destination: providers:com.pocrd.service_demo.api.GreeterServiceHttpExport:1.0.0:public.PUBLIC-GROUP.public.nacos
+    higress.io/backend-protocol: grpc
+    higress.io/auth-tls-secret: ca-certs
+    higress.io/auth-tls-verify-depth: "3"
+spec:
+  ingressClassName: higress
+  tls:
+  - hosts:
+    - www.caringfamily.cn
+    secretName: https-server-secret
+  rules:
+  - host: "www.caringfamily.cn"
+    http:
+      paths:
+      - pathType: Prefix
+        path: /api
+        backend:
+          resource:
+            apiGroup: networking.higress.io
+            kind: McpBridge
+            name: default

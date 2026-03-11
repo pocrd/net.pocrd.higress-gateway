@@ -1,0 +1,36 @@
+# WASM 插件配置 - OCI 镜像方式
+# 官方 Chart 原生支持通过 WasmPlugin CRD 加载 OCI 镜像
+
+apiVersion: extensions.higress.io/v1alpha1
+kind: WasmPlugin
+metadata:
+  name: auth-plugin
+  namespace: higress-system
+spec:
+  # OCI 镜像地址
+  # 格式: oci://<registry>/<repository>:<tag>
+  # 示例: oci://registry.example.com/wasm-plugins/auth-plugin:v1.0.0
+  url: oci://host.docker.internal:5001/wasm-plugins/auth-plugin:v1.0.0
+  
+  # 插件执行阶段
+  # AUTHN: 认证阶段（最先执行）
+  # AUTHZ: 鉴权阶段
+  # STATS: 统计阶段
+  # UNSPECIFIED: 未指定
+  phase: AUTHN
+  
+  # 插件优先级（数字越大优先级越高，同阶段内）
+  priority: 100
+  
+  # 匹配条件（可选，为空则应用到所有路由）
+  matchRules:
+    - ingress:
+        - greeter-route  # 匹配指定的 HTTPRoute 名称
+  
+  # 插件配置（JSON 格式，会传递给插件的 OnPluginStart）
+  # defaultConfig:
+  #   key1: value1
+  #   key2: value2
+  
+  # 配置发送给哪个服务（可选）
+  # defaultConfigDisable: false

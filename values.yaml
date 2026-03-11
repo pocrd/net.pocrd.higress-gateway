@@ -1,0 +1,93 @@
+# Higress 官方 Chart 配置
+# 使用 higress-core Chart
+
+# 全局配置
+global:
+  # 本地开发模式（单节点）
+  local: true
+  
+  # Ingress Class 配置
+  ingressClass: "higress"
+  
+  # 日志级别
+  logging:
+    level: "default:info"
+
+# Higress Controller 配置
+controller:
+  name: "higress-controller"
+  replicas: 1
+  
+  # 镜像配置
+  hub: higress-registry.cn-hangzhou.cr.aliyuncs.com/higress
+  tag: "2.2.0"
+  
+  # 环境变量
+  env:
+    # 关键：启用 McpBridge 支持 Nacos 服务发现
+    CONFIG_SOURCES: "k8s://"
+    ENABLE_MCP: "true"
+    ENABLE_MCP_BRIDGE: "true"
+    ENABLE_NATIVE_MCP: "true"
+    # 时区
+    TZ: "Asia/Shanghai"
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Higress Gateway 配置
+gateway:
+  name: "higress-gateway"
+  replicas: 1
+  
+  # 镜像配置
+  hub: higress-registry.cn-hangzhou.cr.aliyuncs.com/higress
+  tag: "2.2.0"
+  
+  # 使用 Deployment（本地开发）
+  kind: Deployment
+  
+  # 资源限制
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  
+  # Service 配置
+  service:
+    type: NodePort
+    ports:
+      - name: http2
+        port: 80
+        protocol: TCP
+        targetPort: 80
+        nodePort: 30080
+      - name: https
+        port: 443
+        protocol: TCP
+        targetPort: 443
+        nodePort: 30443
+  
+  # 滚动更新策略（本地开发用 100%）
+  rollingMaxSurge: 100%
+  rollingMaxUnavailable: 100%
+  
+  # WASM 插件挂载
+  volumes:
+    - name: wasm-plugins
+      hostPath:
+        path: /Users/pocrd/workspace/deploy/higress/config/wasmplugins
+        type: Directory
+  volumeMounts:
+    - name: wasm-plugins
+      mountPath: /data/wasmplugins
+
+# 不使用内置 Nacos（单独部署）
