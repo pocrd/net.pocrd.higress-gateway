@@ -4,9 +4,9 @@ metadata:
   name: greeter-ingress
   namespace: higress-system
   annotations:
-    higress.io/destination: providers:com.pocrd.service_demo.api.GreeterServiceHttpExport:1.0.0:public.PUBLIC-GROUP.public.nacos
     higress.io/backend-protocol: grpc
-    higress.io/auth-tls-secret: ca-certs
+    higress.io/destination: providers:com.pocrd.service_demo.api.GreeterServiceHttpExport:1.0.0:public.PUBLIC-GROUP.public.nacos
+    higress.io/auth-tls-secret: https-server-secret-cacert
     higress.io/auth-tls-verify-depth: "3"
 spec:
   ingressClassName: higress
@@ -15,11 +15,11 @@ spec:
     - www.caringfamily.cn
     secretName: https-server-secret
   rules:
-  - host: "www.caringfamily.cn"
+  - host: www.caringfamily.cn
     http:
       paths:
-      - pathType: Prefix
-        path: /api
+      - path: /api
+        pathType: Prefix
         backend:
           resource:
             apiGroup: networking.higress.io

@@ -140,7 +140,7 @@ print_sha256() {
 # 配置
 REGISTRY="${REGISTRY:-localhost:5001}"
 REPOSITORY_PREFIX="wasm-plugins"
-OCI_TAG="${OCI_TAG:-v1.0.0}"
+OCI_TAG="${OCI_TAG:-v1.0.1}"
 
 # 检查 oras 是否安装
 check_oras() {
@@ -153,24 +153,43 @@ check_oras() {
 }
 
 # 推送单个插件到 OCI 仓库
+# 使用标准 OCI Image 格式（2层：config + layer），兼容 Higress 2.2.0
 push_oci_image() {
     local wasm_file=$1
     local plugin_name=$(basename "$wasm_file" .wasm)
     local image_url="${REGISTRY}/${REPOSITORY_PREFIX}/${plugin_name}:${OCI_TAG}"
+    local tmp_dir=$(mktemp -d)
     
     echo -e "${YELLOW}  推送 OCI 镜像: ${plugin_name}${NC}"
     echo "    镜像: ${image_url}"
     
+    # 创建符合 Higress 2.2.0 要求的 OCI Image 格式
+    # 需要：1) config.json（空配置） 2) layer.tar.gz（wasm 文件压缩）
+    
+    # 1. 创建空的 config.json
+    echo "{}" > "${tmp_dir}/config.json"
+    
+    # 2. 将 wasm 文件打包为 tar.gz
+    # Higress 期望 tar 包内的文件名为 plugin.wasm
+    cp "$wasm_file" "${tmp_dir}/plugin.wasm"
+    (cd "$tmp_dir" && tar -czf layer.tar.gz "plugin.wasm")
+    
+    # 3. 使用标准 OCI Image 格式推送
+    # 使用 --disable-path-validation 允许使用临时目录的绝对路径
     if oras push "${image_url}" \
-        --artifact-type "application/vnd.wasm.config.v1+json" \
-        "${wasm_file}:application/vnd.wasm.content.layer.v1+wasm" 2>/dev/null; then
+        --disable-path-validation \
+        --config "${tmp_dir}/config.json:application/vnd.oci.image.config.v1+json" \
+        "${tmp_dir}/layer.tar.gz:application/vnd.oci.image.layer.v1.tar+gzip"; then
         echo -e "    ${GREEN}成功: ${image_url}${NC}"
         echo "    在 k8s/wasmplugin-oci.yaml 中使用:"
         echo "      url: oci://${image_url}"
     else
         echo -e "    ${RED}失败: ${image_url}${NC}"
+        rm -rf "$tmp_dir"
         return 1
     fi
+    
+    rm -rf "$tmp_dir"
 }
 
 # 推送所有插件

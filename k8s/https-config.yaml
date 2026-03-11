@@ -39,7 +39,9 @@ data:
     credentialConfig:
     - domains:
       - www.caringfamily.cn
+      - caringfamily.cn
       tlsSecret: https-server-secret
+      caSecret: https-server-secret-cacert
     fallbackForInvalidSecret: false
     renewBeforeDays: 30
-    version: "20260309000002"
+    version: "20260309000003"
