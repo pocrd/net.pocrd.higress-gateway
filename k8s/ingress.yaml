@@ -7,6 +7,7 @@ metadata:
     higress.io/backend-protocol: grpc
     higress.io/destination: providers:com.pocrd.service_demo.api.GreeterServiceHttpExport:1.0.0:public.PUBLIC-GROUP.public.nacos
     higress.io/auth-tls-secret: https-server-secret-cacert
+    higress.io/auth-tls-verify-client: "optional"
     higress.io/auth-tls-verify-depth: "3"
 spec:
   ingressClassName: higress

@@ -6,7 +6,6 @@ metadata:
   labels:
     app.kubernetes.io/name: higress
     app.kubernetes.io/component: mcpbridge
-  # 用于强制覆盖已存在的资源
   creationTimestamp: "2000-01-01T00:00:00Z"
   resourceVersion: "1"
 spec:
