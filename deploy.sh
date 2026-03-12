@@ -128,11 +128,15 @@ cleanup_manual_resources() {
     # 删除手动创建的 ConfigMap（保留 Helm 和系统生成的）
     kubectl delete configmap higress-https -n "${namespace}" --ignore-not-found=true 2>/dev/null || true
     
+    # 删除 higress-config（如果手动修改过会导致 Helm 冲突）
+    kubectl delete configmap higress-config -n "${namespace}" --ignore-not-found=true 2>/dev/null || true
+    
+    # 删除手动创建的 EnvoyFilter（如果存在）
+    kubectl delete envoyfilter -n "${namespace}" -l "app.kubernetes.io/managed-by!=Helm" --ignore-not-found=true 2>/dev/null || true
+    
     # 删除手动创建的 Secret（保留 Helm 和系统生成的 CA 证书）
     kubectl delete secret https-server-secret https-server-secret-cacert -n "${namespace}" --ignore-not-found=true 2>/dev/null || true
     
-    # 删除其他非 Helm 管理的资源
-    kubectl delete pods,services,deployments,statefulsets -n "${namespace}" -l "app.kubernetes.io/managed-by!=Helm" --wait=false 2>/dev/null || true
 }
 
 # 步骤4：部署到 Kubernetes

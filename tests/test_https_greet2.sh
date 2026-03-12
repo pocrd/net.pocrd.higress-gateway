@@ -35,7 +35,7 @@ echo "请求 Body:"
 echo "$REQUEST_BODY"
 echo ""
 
-RESPONSE=$(curl -s --max-time 10 --http2-prior-knowledge -X POST \
+RESPONSE=$(curl -s --max-time 10 --http2 -X POST \
   "${BASE_URL}${SERVICE_PATH}/${METHOD}" \
   -H "Content-Type: application/json" \
   -d "$REQUEST_BODY" \
