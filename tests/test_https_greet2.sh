@@ -8,7 +8,7 @@
 set -e
 
 BASE_URL="https://www.caringfamily.cn:30443"
-SERVICE_PATH="/api/com.pocrd.service_demo.api.GreeterServiceHttpExport"
+SERVICE_PATH="/dapi/com.pocrd.service_demo.api.GreeterServiceHttpExport"
 METHOD="greet2"
 
 echo "=============================================="

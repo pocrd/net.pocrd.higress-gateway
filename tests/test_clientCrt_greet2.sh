@@ -7,7 +7,7 @@
 # =============================================================================
 
 BASE_URL="https://www.caringfamily.cn:30443"
-SERVICE_PATH="/api/com.pocrd.service_demo.api.GreeterServiceHttpExport"
+SERVICE_PATH="/dapi/com.pocrd.service_demo.api.GreeterServiceHttpExport"
 METHOD="greet2"
 REQUEST_BODY='{"name1":"张三","name2":"李四"}'
 

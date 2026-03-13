@@ -88,14 +88,3 @@ gateway:
     # 时区
     TZ: "Asia/Shanghai"
   
-  # WASM 插件挂载
-  volumes:
-    - name: wasm-plugins
-      hostPath:
-        path: /Users/pocrd/workspace/deploy/higress/config/wasmplugins
-        type: Directory
-  volumeMounts:
-    - name: wasm-plugins
-      mountPath: /data/wasmplugins
-
-# 不使用内置 Nacos（单独部署）

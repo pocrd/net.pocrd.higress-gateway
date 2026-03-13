@@ -18,7 +18,7 @@ spec:
   - host: www.caringfamily.cn
     http:
       paths:
-      - path: /api
+      - path: /dapi
         pathType: Prefix
         backend:
           resource:
