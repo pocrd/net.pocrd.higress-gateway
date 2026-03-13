@@ -25,7 +25,8 @@ spec:
   # 匹配条件（可选，为空则应用到所有路由）
   matchRules:
     - ingress:
-        - greeter-ingress  # 匹配指定的 Ingress 名称
+        - dubbo-ingress  # 匹配指定的 Ingress 名称
+        - xiaozhi-server-ingress
   
   # 插件配置（JSON 格式，会传递给插件的 OnPluginStart）
   # defaultConfig:

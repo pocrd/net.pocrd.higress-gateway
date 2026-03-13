@@ -1,0 +1,55 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: xiaozhi-server-ingress
+  namespace: higress-system
+  annotations:
+    higress.io/backend-protocol: HTTP
+    higress.io/destination: xiaozhi-server.static
+    higress.io/auth-tls-secret: https-server-secret-cacert
+    higress.io/auth-tls-verify-depth: "3"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+spec:
+  ingressClassName: higress
+  tls:
+  - hosts:
+    - www.caringfamily.cn
+    secretName: https-server-secret
+  rules:
+  - host: www.caringfamily.cn
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          resource:
+            apiGroup: networking.higress.io
+            kind: McpBridge
+            name: default
+      - path: /ws
+        pathType: Prefix
+        backend:
+          resource:
+            apiGroup: networking.higress.io
+            kind: McpBridge
+            name: default
+      # - path: /swagger-ui
+      #   pathType: Prefix
+      #   backend:
+      #     resource:
+      #       apiGroup: networking.higress.io
+      #       kind: McpBridge
+      #       name: default
+      # - path: /v3/api-docs
+      #   pathType: Prefix
+      #   backend:
+      #     resource:
+      #       apiGroup: networking.higress.io
+      #       kind: McpBridge
+      #       name: default

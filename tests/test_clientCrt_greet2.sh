@@ -183,6 +183,8 @@ else
 
     if [ $CURL_EXIT -eq 0 ] && is_success_response "$RESPONSE"; then
         record_result "测试 1.2" "pass" "Fullchain 证书可以正常访问"
+        echo "响应结果:"
+        echo "$RESPONSE"
     else
         echo "响应结果:"
         echo "$RESPONSE"
@@ -324,6 +326,8 @@ else
 
     if [ $CURL_EXIT -eq 0 ] && is_success_response "$RESPONSE"; then
         record_result "测试 4.1" "pass" "Device002 证书可以正常访问"
+        echo "响应结果:"
+        echo "$RESPONSE"
     else
         echo "响应结果:"
         echo "$RESPONSE"
@@ -347,6 +351,8 @@ else
 
     if [ $CURL_EXIT -eq 0 ] && is_success_response "$RESPONSE"; then
         record_result "测试 4.2" "pass" "Device003 证书可以正常访问"
+        echo "响应结果:"
+        echo "$RESPONSE"
     else
         echo "响应结果:"
         echo "$RESPONSE"
@@ -401,6 +407,8 @@ else
 
     if [ $CURL_EXIT -eq 0 ] && is_success_response "$RESPONSE"; then
         record_result "测试 5.2" "pass" "二级 HTTP 证书可以正常访问（toB 场景）"
+        echo "响应结果:"
+        echo "$RESPONSE"
     else
         echo "响应结果:"
         echo "$RESPONSE"
@@ -536,6 +544,8 @@ CURL_EXIT=$?
 
 if [ $CURL_EXIT -eq 0 ] && is_success_response "$RESPONSE"; then
     record_result "测试 8.1" "pass" "TLS 1.2 连接成功"
+    echo "响应结果:"
+    echo "$RESPONSE"
 else
     echo "响应结果:"
     echo "$RESPONSE"

@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: xiaozhi-web-ingress
+  namespace: higress-system
+  annotations:
+    higress.io/backend-protocol: HTTP
+    higress.io/destination: xiaozhi-web.static
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: higress
+  tls:
+  - hosts:
+    - www.caringfamily.cn
+    secretName: https-server-secret
+  rules:
+  - host: www.caringfamily.cn
+    http:
+      paths:
+      - path: /xz
+        pathType: Prefix
+        backend:
+          resource:
+            apiGroup: networking.higress.io
+            kind: McpBridge
+            name: default
