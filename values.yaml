@@ -34,11 +34,11 @@ controller:
   
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 50m
+      memory: 128Mi
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 200m
+      memory: 256Mi
 
 # Higress Gateway 配置
 gateway:
@@ -55,11 +55,11 @@ gateway:
   # 资源限制
   resources:
     requests:
-      cpu: 100m
-      memory: 512Mi
+      cpu: 50m
+      memory: 256Mi
     limits:
-      cpu: 1000m
-      memory: 1Gi
+      cpu: 300m
+      memory: 768Mi
   
   # Service 配置
   service:
@@ -87,4 +87,3 @@ gateway:
     TLS_MAX_PROTOCOL_VERSION: "TLSv1_3"
     # 时区
     TZ: "Asia/Shanghai"
-  
