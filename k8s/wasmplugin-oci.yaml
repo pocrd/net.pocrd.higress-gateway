@@ -9,8 +9,8 @@ metadata:
 spec:
   # OCI 镜像地址
   # 格式: oci://<registry>/<repository>:<tag>
-  # 示例: oci://registry.example.com/wasm-plugins/auth-plugin:v1.0.0
-  url: oci://host.docker.internal:5001/wasm-plugins/auth-plugin:v1.0.1
+  # 阿里云 ACR 仓库
+  url: oci://crpi-76icqljpukx0sgec.cn-hangzhou.personal.cr.aliyuncs.com/caringfamily/auth-plugin:v1.0.1
   
   # 插件执行阶段
   # AUTHN: 认证阶段（最先执行）

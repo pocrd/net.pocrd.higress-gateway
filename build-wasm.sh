@@ -138,9 +138,25 @@ print_sha256() {
 
 # --- OCI 镜像推送 ---
 # 配置
-REGISTRY="${REGISTRY:-localhost:5001}"
-REPOSITORY_PREFIX="wasm-plugins"
+# 阿里云 ACR 配置
+ACR_REGISTRY_VPC="crpi-76icqljpukx0sgec-vpc.cn-hangzhou.personal.cr.aliyuncs.com"
+ACR_REGISTRY_PUBLIC="crpi-76icqljpukx0sgec.cn-hangzhou.personal.cr.aliyuncs.com"
+ACR_REPOSITORY="caringfamily"
 OCI_TAG="${OCI_TAG:-v1.0.1}"
+
+# 获取有效的 ACR 仓库地址（优先内网，失败则用公网）
+get_acr_registry() {
+    # 先尝试内网地址
+    if curl -sf "https://${ACR_REGISTRY_VPC}/v2/" --max-time 5 &>/dev/null || \
+       curl -sf "http://${ACR_REGISTRY_VPC}:80/v2/" --max-time 5 &>/dev/null; then
+        echo "${ACR_REGISTRY_VPC}"
+        return 0
+    fi
+    
+    # 内网失败，使用公网地址
+    echo "${ACR_REGISTRY_PUBLIC}"
+    return 0
+}
 
 # 检查 oras 是否安装
 check_oras() {
@@ -152,15 +168,63 @@ check_oras() {
     return 0
 }
 
+# 检查是否已登录阿里云 ACR
+# 支持 docker 或 oras 登录
+check_acr_login() {
+    local registry=$1
+    
+    # 方法 1: 检查 oras 是否已登录
+    if oras resolve "${registry}/${ACR_REPOSITORY}/auth-plugin:v1.0.0" &>/dev/null 2>&1; then
+        return 0
+    fi
+    
+    # 方法 2: 检查 docker 是否已登录（oras 可以复用 docker 的认证信息）
+    # docker 的认证信息存储在 ~/.docker/config.json
+    if [ -f "$HOME/.docker/config.json" ]; then
+        # 检查是否有该仓库的认证信息
+        if grep -q "${registry}" "$HOME/.docker/config.json" 2>/dev/null; then
+            echo -e "${GREEN}  检测到 Docker 登录信息，oras 将复用${NC}"
+            return 0
+        fi
+    fi
+    
+    # 方法 3: 尝试直接推送测试（最可靠的方式）
+    local test_tag="test-login-$(date +%s)"
+    local tmp_dir=$(mktemp -d)
+    echo "{}" > "${tmp_dir}/test.json"
+    
+    if oras push "${registry}/${ACR_REPOSITORY}/${test_tag}:test" \
+        --config "${tmp_dir}/test.json:application/vnd.oci.image.config.v1+json" \
+        "${tmp_dir}/test.json:application/octet-stream" &>/dev/null 2>&1; then
+        # 清理测试镜像
+        oras delete "${registry}/${ACR_REPOSITORY}/${test_tag}:test" &>/dev/null 2>&1 || true
+        rm -rf "$tmp_dir"
+        return 0
+    fi
+    
+    rm -rf "$tmp_dir"
+    
+    echo -e "${YELLOW}提示: 未登录阿里云 ACR${NC}"
+    echo "请先登录:"
+    echo "  docker login --username=reway ${registry}"
+    echo "或:"
+    echo "  oras login ${registry} --username=reway"
+    echo ""
+    echo -e "${YELLOW}跳过 OCI 镜像推送${NC}"
+    return 1
+}
+
 # 推送单个插件到 OCI 仓库
 # 使用标准 OCI Image 格式（2层：config + layer），兼容 Higress 2.2.0
 push_oci_image() {
     local wasm_file=$1
     local plugin_name=$(basename "$wasm_file" .wasm)
-    local image_url="${REGISTRY}/${REPOSITORY_PREFIX}/${plugin_name}:${OCI_TAG}"
+    local registry=$(get_acr_registry)
+    local image_url="${registry}/${ACR_REPOSITORY}/${plugin_name}:${OCI_TAG}"
     local tmp_dir=$(mktemp -d)
     
     echo -e "${YELLOW}  推送 OCI 镜像: ${plugin_name}${NC}"
+    echo "    仓库: ${registry}"
     echo "    镜像: ${image_url}"
     
     # 创建符合 Higress 2.2.0 要求的 OCI Image 格式
@@ -198,6 +262,12 @@ push_all_oci() {
     echo -e "${YELLOW}>>> 推送 OCI 镜像...${NC}"
     
     if ! check_oras; then
+        return
+    fi
+    
+    # 获取仓库地址并检查登录状态
+    local registry=$(get_acr_registry)
+    if ! check_acr_login "$registry"; then
         return
     fi
     
@@ -246,8 +316,12 @@ main() {
                 echo "  -h, --help    显示帮助"
                 echo ""
                 echo "环境变量:"
-                echo "  REGISTRY      OCI 仓库地址 (默认: localhost:5000)"
-                echo "  OCI_TAG       OCI 镜像标签 (默认: v1.0.0)"
+                echo "  OCI_TAG       OCI 镜像标签 (默认: v1.0.1)"
+                echo ""
+                echo "阿里云 ACR 配置:"
+                echo "  内网仓库: ${ACR_REGISTRY_VPC}"
+                echo "  公网仓库: ${ACR_REGISTRY_PUBLIC}"
+                echo "  命名空间: ${ACR_REPOSITORY}"
                 exit 0
                 ;;
             *)
