@@ -68,21 +68,20 @@ if ! kubectl get namespace higress-system &> /dev/null; then
 fi
 
 # 检测 Higress 是否已通过 Helm 安装
+if ! command -v helm &> /dev/null; then
+    echo -e "${RED}错误：未找到 helm 命令${NC}"
+    exit 1
+fi
+
 if helm list -n higress-system | grep -q "higress"; then
-    echo "  Higress 已安装，跳过 Helm 安装步骤"
+    echo "  Higress 已安装，执行 Helm 更新..."
+    helm repo update
+    helm upgrade higress higress.io/higress-core -n higress-system -f values.yaml --wait --timeout 5m
+    echo "  Higress 更新完成"
 else
     echo "  Higress 未安装，执行 Helm 安装..."
-    
-    # 检查 helm 是否安装
-    if ! command -v helm &> /dev/null; then
-        echo -e "${RED}错误：未找到 helm 命令${NC}"
-        exit 1
-    fi
-    
-    # 更新仓库并安装 Higress
     helm repo update
     helm install higress higress.io/higress-core -n higress-system -f values.yaml --wait --timeout 5m
-    
     echo "  Higress 安装完成"
 fi
 
