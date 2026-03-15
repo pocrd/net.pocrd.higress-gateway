@@ -3,6 +3,8 @@
 # =================================================================
 # Higress WASM 插件部署脚本 (K8s 模式)
 # 一键完成：编译插件 → 应用 K8s 配置
+# 用法: ./deploy.sh [-plugin]
+#   -plugin: 重新编译 WASM 插件
 # =================================================================
 
 set -e
@@ -13,18 +15,39 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
+# 解析参数
+BUILD_PLUGIN=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -plugin)
+            BUILD_PLUGIN=true
+            shift
+            ;;
+        *)
+            echo -e "${RED}未知参数: $1${NC}"
+            echo "用法: ./deploy.sh [-plugin]"
+            echo "  -plugin: 重新编译 WASM 插件"
+            exit 1
+            ;;
+    esac
+done
+
 echo "========================================"
 echo "    Higress WASM 插件部署工具 (K8s)"
 echo "========================================"
 echo ""
 
-# 步骤 1: 编译插件
-echo -e "${YELLOW}[1/3] 编译 WASM 插件...${NC}"
-if [ -f "./build-wasm.sh" ]; then
-    ./build-wasm.sh
+# 步骤 1: 编译插件（仅当指定 -plugin 参数时）
+if [ "$BUILD_PLUGIN" = true ]; then
+    echo -e "${YELLOW}[1/3] 编译 WASM 插件...${NC}"
+    if [ -f "./build-wasm.sh" ]; then
+        ./build-wasm.sh
+    else
+        echo -e "${RED}错误：找不到 build-wasm.sh 脚本${NC}"
+        exit 1
+    fi
 else
-    echo -e "${RED}错误：找不到 build-wasm.sh 脚本${NC}"
-    exit 1
+    echo -e "${YELLOW}[1/3] 跳过 WASM 插件编译 (使用 -plugin 参数启用)${NC}"
 fi
 
 echo ""
