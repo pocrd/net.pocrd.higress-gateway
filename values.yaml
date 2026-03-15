@@ -62,6 +62,7 @@ gateway:
       memory: 1Gi
   
   # Service 配置
+  # 生产环境：CLB 做 TLS 终结，只暴露 HTTP 80 端口
   service:
     type: NodePort
     ports:
@@ -75,6 +76,10 @@ gateway:
         protocol: TCP
         targetPort: 443
         nodePort: 30443
+
+  # 使用 hostPort 监听宿主机 80 端口（CLB 后端直接访问）
+  hostPorts:
+    http: 80
   
   # 滚动更新策略（本地开发用 100%）
   rollingMaxSurge: 100%
