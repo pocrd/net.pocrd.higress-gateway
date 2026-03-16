@@ -12,12 +12,21 @@ RENEW_DAYS=60
 # 返回：0 需要更新，1 不需要更新
 check_cert_renewal() {
     local domain=$1
-    local cert_dir="$HOME/.acme.sh/${domain}_ecc"
+    # 优先检查 RSA 格式，然后检查 ECC 格式
+    local cert_dir="$HOME/.acme.sh/${domain}"
+    if [ ! -f "$cert_dir/$domain.cer" ]; then
+        cert_dir="$HOME/.acme.sh/${domain}_ecc"
+    fi
+    
+    # 调试输出
+    echo "    [调试] 检查证书路径: $cert_dir/$domain.cer"
     
     # 检查证书是否存在
     if [ ! -f "$cert_dir/$domain.cer" ]; then
+        echo "    [调试] 证书文件不存在"
         return 0  # 需要申请
     fi
+    echo "    [调试] 证书文件存在"
     
     # 获取证书过期时间
     local expiry_date=$(openssl x509 -in "$cert_dir/$domain.cer" -noout -enddate 2>/dev/null | cut -d= -f2)
@@ -63,7 +72,12 @@ fi
 
 # 始终执行部署（确保 K8s 和 CLB 上有证书）
 echo ">>> 正在同步通配符证书到 Higress (K8s Secret)..."
-CERT_DIR="$HOME/.acme.sh/caringfamily.cn_ecc"
+# 优先使用 RSA 格式证书（CLB 不支持 ECC）
+if [ -d "$HOME/.acme.sh/caringfamily.cn" ]; then
+    CERT_DIR="$HOME/.acme.sh/caringfamily.cn"
+else
+    CERT_DIR="$HOME/.acme.sh/caringfamily.cn_ecc"
+fi
 CERT_FILE="$CERT_DIR/fullchain.cer"
 KEY_FILE="$CERT_DIR/caringfamily.cn.key"
 
@@ -80,7 +94,12 @@ else
 fi
 
 echo ">>> 正在上传证书到阿里云 CLB..."
-CERT_DIR="$HOME/.acme.sh/caringfamily.cn_ecc"
+# 优先使用 RSA 格式证书（CLB 不支持 ECC）
+if [ -d "$HOME/.acme.sh/caringfamily.cn" ]; then
+    CERT_DIR="$HOME/.acme.sh/caringfamily.cn"
+else
+    CERT_DIR="$HOME/.acme.sh/caringfamily.cn_ecc"
+fi
 # CLB 需要单独的证书和中间链，不是 fullchain
 CERT_FILE="$CERT_DIR/caringfamily.cn.cer"
 CA_FILE="$CERT_DIR/ca.cer"
@@ -135,7 +154,7 @@ if [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; then
             --ServerCertificate "$CERT_CONTENT" \
             --PrivateKey "$(cat "$KEY_FILE")" \
             --ServerCertificateName "$NEW_CERT_NAME" \
-            --ResourceGroupId default; then
+            --ResourceGroupId "rg-acfm2rjmfrfahdi"; then
             echo "    证书已上传到 CLB: $NEW_CERT_NAME"
             echo "    注意: 请在阿里云控制台更新 CLB 监听器绑定的证书"
         else
