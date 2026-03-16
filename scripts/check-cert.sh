@@ -14,16 +14,29 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # 证书配置
-CERT_DIR="$HOME/.acme.sh/caringfamily.cn_ecc"
-CERT_FILE="$CERT_DIR/fullchain.cer"
-KEY_FILE="$CERT_DIR/caringfamily.cn.key"
+# 优先使用 RSA 格式证书（CLB 不支持 ECC）
+CERT_DIR="$HOME/.acme.sh/caringfamily.cn"
+if [ -d "$CERT_DIR" ]; then
+    # RSA 格式证书
+    CERT_FILE="$CERT_DIR/fullchain.cer"
+    KEY_FILE="$CERT_DIR/caringfamily.cn.key"
+else
+    # ECC 格式证书（向后兼容）
+    CERT_DIR="$HOME/.acme.sh/caringfamily.cn_ecc"
+    CERT_FILE="$CERT_DIR/fullchain.cer"
+    KEY_FILE="$CERT_DIR/caringfamily.cn.key"
+fi
 HTTPS_CONFIG_FILE="k8s/https-config.yaml"
 RENEW_DAYS=60
 
 # 函数：检查证书是否存在且在有效期内
 check_cert_valid() {
     local domain=$1
-    local cert_path="$HOME/.acme.sh/${domain}_ecc/${domain}.cer"
+    # 优先检查 RSA 格式，然后检查 ECC 格式
+    local cert_path="$HOME/.acme.sh/${domain}/${domain}.cer"
+    if [ ! -f "$cert_path" ]; then
+        cert_path="$HOME/.acme.sh/${domain}_ecc/${domain}.cer"
+    fi
     
     # 检查证书文件是否存在
     if [ ! -f "$cert_path" ]; then
