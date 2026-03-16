@@ -6,8 +6,6 @@ metadata:
   labels:
     app.kubernetes.io/name: higress
     app.kubernetes.io/component: mcpbridge
-  creationTimestamp: "2000-01-01T00:00:00Z"
-  resourceVersion: "1"
 spec:
   registries:
   # Higress Console 静态配置
