@@ -37,3 +37,22 @@ spec:
   
   # 配置发送给哪个服务（可选）
   # defaultConfigDisable: false
+
+---
+# 2. 声明官方的自定义响应插件
+apiVersion: extensions.higress.io/v1alpha1
+kind: WasmPlugin
+metadata:
+  name: custom-response
+  namespace: higress-system
+spec:
+  # 使用官方提供的 custom-response 镜像
+  url: oci://higress-registry.cn-hangzhou.cr.aliyuncs.com/plugins/custom-response:latest
+  phase: AUTHN
+  priority: 910
+  # 插件配置直接写在 WasmPlugin 中 (按照官方文档格式)
+  defaultConfig:
+    status_code: "200"
+    body: "<html><body>首页内容</body></html>"
+    headers:
+      - "Content-Type=text/html; charset=utf-8"

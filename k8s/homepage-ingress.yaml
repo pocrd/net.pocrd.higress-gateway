@@ -1,33 +1,30 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  labels:
-    managed-by: higress-deploy
-  name: homepage
+  name: homepage-ingress
   namespace: higress-system
-  annotations:
-    higress.io/static-response: |
-      statusCode: 200
-      headers:
-        content-type: text/html
-      body: |
-        <html>
-        <head><title>Higress OK</title></head>
-        <body>
-        <h1>Hello Higress</h1>
-        <p>Your gateway is working.</p>
-        </body>
-        </html>
+  annotations: {}
 spec:
   ingressClassName: higress
+  tls:
+  - hosts:
+    - "www.caringfamily.cn"
+    secretName: https-server-secret
   rules:
-  - host: homepage.local
+  - host: "www.caringfamily.cn"
     http:
       paths:
       - path: /
-        pathType: Prefix
+        pathType: Exact
         backend:
           service:
-            name: dummy-service
+            name: placeholder-service # 占位服务
+            port:
+              number: 80
+      - path: /index.html
+        pathType: Exact
+        backend:
+          service:
+            name: placeholder-service
             port:
               number: 80
