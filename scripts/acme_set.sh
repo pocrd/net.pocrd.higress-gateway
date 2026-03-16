@@ -52,8 +52,9 @@ if check_cert_renewal "caringfamily.cn"; then
     
     ~/.acme.sh/acme.sh --set-default-ca --server letsencrypt
     
-    # 申请证书
+    # 申请证书（使用 RSA 2048 格式，CLB 不支持 ECC）
     ~/.acme.sh/acme.sh --issue --dns dns_ali \
+        --keylength 2048 \
         -d caringfamily.cn \
         -d "*.caringfamily.cn"
 else
@@ -80,13 +81,41 @@ fi
 
 echo ">>> 正在上传证书到阿里云 CLB..."
 CERT_DIR="$HOME/.acme.sh/caringfamily.cn_ecc"
-CERT_FILE="$CERT_DIR/fullchain.cer"
+# CLB 需要单独的证书和中间链，不是 fullchain
+CERT_FILE="$CERT_DIR/caringfamily.cn.cer"
+CA_FILE="$CERT_DIR/ca.cer"
 KEY_FILE="$CERT_DIR/caringfamily.cn.key"
+
+# 合并证书和 CA 链（CLB 格式要求）
+# 使用 cat 直接合并，去除空行
+if [ -f "$CA_FILE" ]; then
+    CERT_CONTENT=$(cat "$CERT_FILE" "$CA_FILE" | grep -v '^$')
+else
+    CERT_CONTENT=$(cat "$CERT_FILE")
+fi
 
 if [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; then
     if command -v aliyun &> /dev/null; then
-        # 配置 aliyun CLI 区域
-        aliyun configure set --region "$CLB_REGION" 2>/dev/null || true
+        # 从 acme.sh 配置读取阿里云密钥
+        ACME_ACCOUNT_CONF="$HOME/.acme.sh/account.conf"
+        ALI_KEY=$(grep "^SAVED_Ali_Key=" "$ACME_ACCOUNT_CONF" 2>/dev/null | sed 's/^SAVED_Ali_Key=//; s/^["'\''"]//; s/["'\''"]$//')
+        ALI_SECRET=$(grep "^SAVED_Ali_Secret=" "$ACME_ACCOUNT_CONF" 2>/dev/null | sed 's/^SAVED_Ali_Secret=//; s/^["'\''"]//; s/["'\''"]$//')
+        
+        if [ -z "$ALI_KEY" ] || [ -z "$ALI_SECRET" ]; then
+            echo "    [错误] 未找到阿里云 AccessKey"
+            exit 1
+        fi
+        
+        # 调试：显示密钥长度和前几位（删除这行在生产环境）
+        echo "    [调试] AccessKeyId: ${ALI_KEY:0:8}... (长度: ${#ALI_KEY})"
+        echo "    [调试] 证书内容前50字符: ${CERT_CONTENT:0:50}..."
+        
+        # 配置 aliyun CLI（使用 acme.sh 的密钥）
+        aliyun configure set \
+            --access-key-id "$ALI_KEY" \
+            --access-key-secret "$ALI_SECRET" \
+            --region "$CLB_REGION" \
+            --mode AK
         
         # 检查是否已存在同名证书
         EXISTING_CERT=$(aliyun slb DescribeServerCertificates \
@@ -103,7 +132,7 @@ if [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; then
         # 上传证书
         if aliyun slb UploadServerCertificate \
             --RegionId "$CLB_REGION" \
-            --ServerCertificate "$(cat "$CERT_FILE")" \
+            --ServerCertificate "$CERT_CONTENT" \
             --PrivateKey "$(cat "$KEY_FILE")" \
             --ServerCertificateName "$NEW_CERT_NAME" \
             --ResourceGroupId default; then
@@ -128,8 +157,9 @@ if check_cert_renewal "res.caringfamily.cn"; then
     # 清理旧记录
     ~/.acme.sh/acme.sh --remove -d res.caringfamily.cn 2>/dev/null || true
     
-    # 申请证书
+    # 申请证书（使用 RSA 2048 格式，CLB 不支持 ECC）
     ~/.acme.sh/acme.sh --issue --dns dns_ali \
+        --keylength 2048 \
         -d res.caringfamily.cn
 else
     echo "    证书有效期充足，跳过申请"
