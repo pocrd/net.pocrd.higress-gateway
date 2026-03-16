@@ -60,10 +60,10 @@ if check_cert_renewal "caringfamily.cn"; then
     ~/.acme.sh/acme.sh --remove -d "*.caringfamily.cn" 2>/dev/null || true
     
     ~/.acme.sh/acme.sh --set-default-ca --server letsencrypt
-    
-    # 申请证书（使用 RSA 2048 格式，CLB 不支持 ECC）
+        
+    # 申请证书 (使用 ECC P-256 椭圆曲线)
     ~/.acme.sh/acme.sh --issue --dns dns_ali \
-        --keylength 2048 \
+        --keylength ec-256 \
         -d caringfamily.cn \
         -d "*.caringfamily.cn"
 else
@@ -176,9 +176,9 @@ if check_cert_renewal "res.caringfamily.cn"; then
     # 清理旧记录
     ~/.acme.sh/acme.sh --remove -d res.caringfamily.cn 2>/dev/null || true
     
-    # 申请证书（使用 RSA 2048 格式，CLB 不支持 ECC）
+    # 申请证书 (使用 ECC P-256 椭圆曲线)
     ~/.acme.sh/acme.sh --issue --dns dns_ali \
-        --keylength 2048 \
+        --keylength ec-256 \
         -d res.caringfamily.cn
 else
     echo "    证书有效期充足，跳过申请"
