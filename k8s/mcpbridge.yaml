@@ -25,9 +25,9 @@ spec:
       - PUBLIC-GROUP
   - name: xiaozhi-server
     type: static
-    domain: xiaozhi-server.default.svc.cluster.local  # 或实际 IP
+    domain: 127.0.0.1  # 或实际 IP
     port: 8091
   - name: xiaozhi-web
     type: static
-    domain: 192.168.1.100  # 替换为实际 IP
+    domain: 127.0.0.1  # 替换为实际 IP
     port: 8084

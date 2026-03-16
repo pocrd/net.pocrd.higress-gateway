@@ -44,4 +44,4 @@ data:
       caCertSecret: https-server-secret-cacert
     fallbackForInvalidSecret: false
     renewBeforeDays: 30
-    version: "20260309000003"
+    version: "20260309000004"
