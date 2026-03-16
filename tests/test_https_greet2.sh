@@ -7,7 +7,7 @@
 
 set -e
 
-BASE_URL="https://www.caringfamily.cn:30443"
+BASE_URL="https://api.caringfamily.cn:30443"
 SERVICE_PATH="/dapi/com.pocrd.service_demo.api.GreeterServiceHttpExport"
 METHOD="greet2"
 
@@ -39,7 +39,7 @@ RESPONSE=$(curl -s --max-time 10 --http2 -X POST \
   "${BASE_URL}${SERVICE_PATH}/${METHOD}" \
   -H "Content-Type: application/json" \
   -d "$REQUEST_BODY" \
-  --resolve "www.caringfamily.cn:30443:127.0.0.1" \
+  --resolve "api.caringfamily.cn:30443:127.0.0.1" \
   --insecure 2>&1) || {
     echo "❌ 请求失败: $RESPONSE"
     exit 1

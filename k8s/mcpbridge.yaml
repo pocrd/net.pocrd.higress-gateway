@@ -4,6 +4,7 @@ metadata:
   name: default
   namespace: higress-system
   labels:
+    managed-by: higress-deploy
     app.kubernetes.io/name: higress
     app.kubernetes.io/component: mcpbridge
 spec:

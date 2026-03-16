@@ -1,6 +1,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  labels:
+    managed-by: higress-deploy
   name: dubbo-ingress
   namespace: higress-system
   annotations:
@@ -12,10 +14,10 @@ spec:
   ingressClassName: higress
   tls:
   - hosts:
-    - www.caringfamily.cn
+    - api.caringfamily.cn
     secretName: https-server-secret
   rules:
-  - host: www.caringfamily.cn
+  - host: api.caringfamily.cn
     http:
       paths:
       - path: /dapi

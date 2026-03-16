@@ -6,7 +6,7 @@
 # 包含：正确证书、无证书、错误证书、证书链验证、私钥匹配等多种测试场景
 # =============================================================================
 
-BASE_URL="https://www.caringfamily.cn:30443"
+BASE_URL="https://api.caringfamily.cn:30443"
 SERVICE_PATH="/dapi/com.pocrd.service_demo.api.GreeterServiceHttpExport"
 METHOD="greet2"
 REQUEST_BODY='{"name1":"张三","name2":"李四"}'
@@ -85,7 +85,7 @@ do_curl() {
     local extra_opts="$4"
     local curl_cmd
 
-    curl_cmd="curl -s --max-time $MAX_TIME -X POST \"${BASE_URL}${SERVICE_PATH}/${METHOD}\" -H \"Content-Type: application/json\" -d '$REQUEST_BODY' --resolve \"www.caringfamily.cn:30443:127.0.0.1\" $extra_opts"
+    curl_cmd="curl -s --max-time $MAX_TIME -X POST \"${BASE_URL}${SERVICE_PATH}/${METHOD}\" -H \"Content-Type: application/json\" -d '$REQUEST_BODY' --resolve \"api.caringfamily.cn:30443:127.0.0.1\" $extra_opts"
 
     if [[ -n "$cert" && -n "$key" ]]; then
         curl_cmd="$curl_cmd --cert \"$cert\" --key \"$key\""
@@ -476,7 +476,7 @@ RESPONSE=$(curl -s --max-time $MAX_TIME -X POST \
   -d "$REQUEST_BODY" \
   --cert "$FULLCHAIN_KEY" \
   --key "$FULLCHAIN_CERT" \
-  --resolve "www.caringfamily.cn:30443:127.0.0.1" 2>&1)
+  --resolve "api.caringfamily.cn:30443:127.0.0.1" 2>&1)
 CURL_EXIT=$?
 
 if [ $CURL_EXIT -ne 0 ]; then
@@ -539,7 +539,7 @@ RESPONSE=$(curl -s --max-time $MAX_TIME -X POST \
   --cert "$FULLCHAIN_CERT" \
   --key "$FULLCHAIN_KEY" \
   --tlsv1.2 \
-  --resolve "www.caringfamily.cn:30443:127.0.0.1" 2>&1)
+  --resolve "api.caringfamily.cn:30443:127.0.0.1" 2>&1)
 CURL_EXIT=$?
 
 if [ $CURL_EXIT -eq 0 ] && is_success_response "$RESPONSE"; then
@@ -589,7 +589,7 @@ RESPONSE=$(curl -s --max-time $MAX_TIME -X POST \
   --cert "$FULLCHAIN_CERT" \
   --key "$FULLCHAIN_KEY" \
   --tlsv1.0 \
-  --resolve "www.caringfamily.cn:30443:127.0.0.1" 2>&1)
+  --resolve "api.caringfamily.cn:30443:127.0.0.1" 2>&1)
 CURL_EXIT=$?
 
 if [ $CURL_EXIT -ne 0 ]; then
@@ -666,7 +666,7 @@ RESPONSE=$(curl -s --max-time $MAX_TIME -X POST \
   -d "$LARGE_REQUEST_BODY" \
   --cert "$FULLCHAIN_CERT" \
   --key "$FULLCHAIN_KEY" \
-  --resolve "www.caringfamily.cn:30443:127.0.0.1" 2>&1)
+  --resolve "api.caringfamily.cn:30443:127.0.0.1" 2>&1)
 CURL_EXIT=$?
 
 # 大请求体可能返回 413 Payload Too Large，这也是合理的
@@ -692,7 +692,7 @@ RESPONSE=$(curl -s --max-time $MAX_TIME -X POST \
   -d "" \
   --cert "$FULLCHAIN_CERT" \
   --key "$FULLCHAIN_KEY" \
-  --resolve "www.caringfamily.cn:30443:127.0.0.1" 2>&1)
+  --resolve "api.caringfamily.cn:30443:127.0.0.1" 2>&1)
 CURL_EXIT=$?
 
 # 空请求体可能返回 400 Bad Request，只要证书验证通过即可
@@ -715,7 +715,7 @@ RESPONSE=$(curl -s --max-time $MAX_TIME -X POST \
   -H "Content-Type: application/json" \
   -d "$REQUEST_BODY" \
   --cert "$FULLCHAIN_CERT" \
-  --resolve "www.caringfamily.cn:30443:127.0.0.1" 2>&1)
+  --resolve "api.caringfamily.cn:30443:127.0.0.1" 2>&1)
 CURL_EXIT=$?
 
 if [ $CURL_EXIT -ne 0 ]; then

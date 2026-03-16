@@ -1,12 +1,16 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  labels:
+    managed-by: higress-deploy
   name: nacos
   namespace: higress-system
 ---
 apiVersion: v1
 kind: Service
 metadata:
+  labels:
+    managed-by: higress-deploy
   name: nacos
   namespace: higress-system
   labels:
@@ -32,6 +36,8 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
+  labels:
+    managed-by: higress-deploy
   name: nacos
   namespace: higress-system
   labels:
@@ -45,6 +51,7 @@ spec:
   template:
     metadata:
       labels:
+        managed-by: higress-deploy
         app.kubernetes.io/name: nacos
     spec:
       serviceAccountName: nacos

@@ -40,6 +40,9 @@ data:
     - domains:
       - www.caringfamily.cn
       - caringfamily.cn
+      - api.caringfamily.cn
+      - x.caringfamily.cn
+      - xz.caringfamily.cn
       tlsSecret: https-server-secret
     fallbackForInvalidSecret: false
     renewBeforeDays: 30

@@ -1,6 +1,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  labels:
+    managed-by: higress-deploy
   name: xiaozhi-web-ingress
   namespace: higress-system
   annotations:
@@ -11,10 +13,10 @@ spec:
   ingressClassName: higress
   tls:
   - hosts:
-    - www.caringfamily.cn
+    - xz.caringfamily.cn
     secretName: https-server-secret
   rules:
-  - host: www.caringfamily.cn
+  - host: xz.caringfamily.cn
     http:
       paths:
       - path: /xz

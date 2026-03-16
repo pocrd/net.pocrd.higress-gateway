@@ -1,0 +1,33 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    managed-by: higress-deploy
+  name: homepage
+  namespace: higress-system
+  annotations:
+    higress.io/static-response: |
+      statusCode: 200
+      headers:
+        content-type: text/html
+      body: |
+        <html>
+        <head><title>Higress OK</title></head>
+        <body>
+        <h1>Hello Higress</h1>
+        <p>Your gateway is working.</p>
+        </body>
+        </html>
+spec:
+  ingressClassName: higress
+  rules:
+  - host: homepage.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: dummy-service
+            port:
+              number: 80

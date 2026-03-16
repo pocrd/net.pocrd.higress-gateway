@@ -4,6 +4,8 @@
 apiVersion: extensions.higress.io/v1alpha1
 kind: WasmPlugin
 metadata:
+  labels:
+    managed-by: higress-deploy
   name: auth-plugin
   namespace: higress-system
 spec:
