@@ -62,10 +62,21 @@ fi
 
 # 始终执行部署（确保 K8s 和 CLB 上有证书）
 echo ">>> 正在同步通配符证书到 Higress (K8s Secret)..."
-# 使用环境变量传递配置（新版 acme.sh 推荐方式）
-export DEPLOY_K8S_NAME="https-server-secret"
-export DEPLOY_K8S_NAMESPACE="higress-system"
-~/.acme.sh/acme.sh --deploy -d caringfamily.cn --deploy-hook kubernetes
+CERT_DIR="$HOME/.acme.sh/caringfamily.cn_ecc"
+CERT_FILE="$CERT_DIR/fullchain.cer"
+KEY_FILE="$CERT_DIR/caringfamily.cn.key"
+
+if [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; then
+    # 使用 kubectl 直接创建/更新 Secret
+    kubectl create secret tls https-server-secret \
+        --cert="$CERT_FILE" \
+        --key="$KEY_FILE" \
+        -n higress-system \
+        --dry-run=client -o yaml | kubectl apply -f -
+    echo "    证书已同步到 K8s Secret: https-server-secret"
+else
+    echo "    [错误] 证书文件不存在，跳过 K8s 同步"
+fi
 
 echo ">>> 正在上传证书到阿里云 CLB..."
 CERT_DIR="$HOME/.acme.sh/caringfamily.cn_ecc"
@@ -74,6 +85,9 @@ KEY_FILE="$CERT_DIR/caringfamily.cn.key"
 
 if [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; then
     if command -v aliyun &> /dev/null; then
+        # 配置 aliyun CLI 区域
+        aliyun configure set --region "$CLB_REGION" 2>/dev/null || true
+        
         # 检查是否已存在同名证书
         EXISTING_CERT=$(aliyun slb DescribeServerCertificates \
             --RegionId "$CLB_REGION" \
@@ -87,15 +101,17 @@ if [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; then
         fi
         
         # 上传证书
-        aliyun slb UploadServerCertificate \
+        if aliyun slb UploadServerCertificate \
             --RegionId "$CLB_REGION" \
             --ServerCertificate "$(cat "$CERT_FILE")" \
             --PrivateKey "$(cat "$KEY_FILE")" \
             --ServerCertificateName "$NEW_CERT_NAME" \
-            --ResourceGroupId default
-        
-        echo "    证书已上传到 CLB: $NEW_CERT_NAME"
-        echo "    注意: 请在阿里云控制台更新 CLB 监听器绑定的证书"
+            --ResourceGroupId default; then
+            echo "    证书已上传到 CLB: $NEW_CERT_NAME"
+            echo "    注意: 请在阿里云控制台更新 CLB 监听器绑定的证书"
+        else
+            echo "    [错误] CLB 证书上传失败"
+        fi
     else
         echo "    [警告] 未找到阿里云 CLI，跳过 CLB 证书上传"
     fi

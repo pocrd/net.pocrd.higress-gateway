@@ -3,8 +3,9 @@
 # =================================================================
 # Higress WASM 插件部署脚本 (K8s 模式)
 # 一键完成：编译插件 → 应用 K8s 配置
-# 用法: ./deploy.sh [-plugin]
-#   -plugin: 重新编译 WASM 插件
+# 用法: ./deploy.sh [-plugin] [-skipCert]
+#   -plugin:    重新编译 WASM 插件
+#   -skipCert:  跳过证书检查和同步
 # =================================================================
 
 set -e
@@ -17,16 +18,22 @@ NC='\033[0m'
 
 # 解析参数
 BUILD_PLUGIN=false
+SKIP_CERT=false
 while [[ $# -gt 0 ]]; do
     case $1 in
         -plugin)
             BUILD_PLUGIN=true
             shift
             ;;
+        -skipCert)
+            SKIP_CERT=true
+            shift
+            ;;
         *)
             echo -e "${RED}未知参数: $1${NC}"
-            echo "用法: ./deploy.sh [-plugin]"
-            echo "  -plugin: 重新编译 WASM 插件"
+            echo "用法: ./deploy.sh [-plugin] [-skipCert]"
+            echo "  -plugin:    重新编译 WASM 插件"
+            echo "  -skipCert:  跳过证书检查和同步"
             exit 1
             ;;
     esac
@@ -37,9 +44,25 @@ echo "    Higress WASM 插件部署工具 (K8s)"
 echo "========================================"
 echo ""
 
+# 步骤 0: 证书检查和同步（除非指定 -skipCert）
+if [ "$SKIP_CERT" = false ]; then
+    echo -e "${YELLOW}[0/4] 检查并同步证书...${NC}"
+    if [ -f "./scripts/check-cert.sh" ]; then
+        if ! ./scripts/check-cert.sh; then
+            echo -e "${RED}错误：证书检查失败，使用 -skipCert 参数跳过${NC}"
+            exit 1
+        fi
+    else
+        echo -e "${YELLOW}警告：找不到 check-cert.sh 脚本，跳过证书检查${NC}"
+    fi
+    echo ""
+else
+    echo -e "${YELLOW}[0/4] 跳过证书检查 (使用 -skipCert 参数)${NC}"
+fi
+
 # 步骤 1: 编译插件（仅当指定 -plugin 参数时）
 if [ "$BUILD_PLUGIN" = true ]; then
-    echo -e "${YELLOW}[1/3] 编译 WASM 插件...${NC}"
+    echo -e "${YELLOW}[1/4] 编译 WASM 插件...${NC}"
     if [ -f "./build-wasm.sh" ]; then
         ./build-wasm.sh
     else
@@ -47,13 +70,13 @@ if [ "$BUILD_PLUGIN" = true ]; then
         exit 1
     fi
 else
-    echo -e "${YELLOW}[1/3] 跳过 WASM 插件编译 (使用 -plugin 参数启用)${NC}"
+    echo -e "${YELLOW}[1/4] 跳过 WASM 插件编译 (使用 -plugin 参数启用)${NC}"
 fi
 
 echo ""
 
 # 步骤 2: 检查并安装/更新 Higress
-echo -e "${YELLOW}[2/3] 检查 Higress 安装状态...${NC}"
+echo -e "${YELLOW}[2/4] 检查 Higress 安装状态...${NC}"
 
 # 检查 kubectl 是否安装
 if ! command -v kubectl &> /dev/null; then
@@ -87,7 +110,7 @@ fi
 
 # 步骤 3: 清理并应用业务配置
 echo ""
-echo -e "${YELLOW}[3/3] 清理并应用业务配置...${NC}"
+echo -e "${YELLOW}[3/4] 清理并应用业务配置...${NC}"
 
 # 先清理非 Helm 管理的配置（避免残留，但保留 Helm 默认资源）
 echo "  清理非 Helm 管理的配置..."
@@ -130,8 +153,9 @@ echo ""
 echo "  等待配置生效..."
 sleep 3
 
-# 检查配置状态
-echo "  检查配置状态..."
+# 步骤 4: 检查配置状态
+echo ""
+echo -e "${YELLOW}[4/4] 检查配置状态...${NC}"
 kubectl get ingress,mcpbridge -n higress-system
 
 echo ""
