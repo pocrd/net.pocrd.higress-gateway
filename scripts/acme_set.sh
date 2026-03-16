@@ -62,10 +62,10 @@ fi
 
 # 始终执行部署（确保 K8s 和 CLB 上有证书）
 echo ">>> 正在同步通配符证书到 Higress (K8s Secret)..."
-~/.acme.sh/acme.sh --deploy -d caringfamily.cn \
-    --deploy-hook kubernetes \
-    --set-name caringfamily-wildcard-tls-secret \
-    --set-namespace higress-system
+# 使用环境变量传递配置（新版 acme.sh 推荐方式）
+export DEPLOY_K8S_NAME="https-server-secret"
+export DEPLOY_K8S_NAMESPACE="higress-system"
+~/.acme.sh/acme.sh --deploy -d caringfamily.cn --deploy-hook kubernetes
 
 echo ">>> 正在上传证书到阿里云 CLB..."
 CERT_DIR="$HOME/.acme.sh/caringfamily.cn_ecc"
@@ -125,9 +125,9 @@ if [ -f "$HOME/.acme.sh/deploy/ali_cdn.sh" ]; then
     # 从 acme.sh 配置文件读取阿里云 AccessKey
     ACME_ACCOUNT_CONF="$HOME/.acme.sh/account.conf"
     if [ -f "$ACME_ACCOUNT_CONF" ]; then
-        # 读取 SAVED_Ali_Key 和 SAVED_Ali_Secret
-        export Ali_Key=$(grep "^SAVED_Ali_Key=" "$ACME_ACCOUNT_CONF" | cut -d'"' -f2)
-        export Ali_Secret=$(grep "^SAVED_Ali_Secret=" "$ACME_ACCOUNT_CONF" | cut -d'"' -f2)
+        # 读取 SAVED_Ali_Key 和 SAVED_Ali_Secret（支持带引号或不带引号的格式）
+        export Ali_Key=$(grep "^SAVED_Ali_Key=" "$ACME_ACCOUNT_CONF" | sed 's/^SAVED_Ali_Key=//; s/^["'\''"]//; s/["'\''"]$//')
+        export Ali_Secret=$(grep "^SAVED_Ali_Secret=" "$ACME_ACCOUNT_CONF" | sed 's/^SAVED_Ali_Secret=//; s/^["'\''"]//; s/["'\''"]$//')
     fi
     
     if [ -z "$Ali_Key" ] || [ -z "$Ali_Secret" ]; then
