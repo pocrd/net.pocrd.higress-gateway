@@ -87,18 +87,27 @@ if [ "$REINSTALL" = true ]; then
     echo -ne "  [5/5] 正在检测 80/443 端口释放情况..."
     
     # 循环检查 80/443 是否还在被监听
+    # 检测可用命令
+    if command -v ss >/dev/null 2>&1; then
+        PORT_CHECK_CMD="ss -tln"
+    elif command -v netstat >/dev/null 2>&1; then
+        PORT_CHECK_CMD="netstat -tln"
+    else
+        echo -e "${RED}错误：未找到 ss 或 netstat 命令，请安装 iproute2 或 net-tools${NC}"
+        exit 1
+    fi
+
+    # 循环检测端口释放
     MAX_WAIT=20
     for ((i=1; i<=$MAX_WAIT; i++)); do
-        # 检查宿主机是否有进程在监听 80 或 443
-        # 使用 ss 比 netstat 更快，更现代
-        if ss -tln | grep -qE ':(80|443)\s'; then
+        if $PORT_CHECK_CMD | grep -qE ':(80|443)\s'; then
             echo -ne "."
             sleep 1
         else
             echo -e "${GREEN} 已释放!${NC}"
             break
         fi
-        
+
         if [ $i -eq $MAX_WAIT ]; then
             echo -e "${RED} 警告：端口在 20s 后仍未释放，尝试强行安装...${NC}"
         fi
@@ -128,7 +137,7 @@ if [ -d "k8s" ]; then
     echo "  正在通过 Server-Side Apply 应用配置..."
     # --server-side: 解决所有 resourceVersion 冲突，是 K8s 1.22+ 的推荐做法
     # --force-conflicts: 确保本地 YAML 始终覆盖集群状态
-    kubectl apply -f k8s/ -n higress-system --server-side --force-conflicts
+    kubectl apply -f k8s/ -n higress-system --server-side --force-conflicts #--prune -l managed-by=higress-deploy
 else
     echo -e "${YELLOW}  跳过：未找到 k8s/ 目录${NC}"
 fi
