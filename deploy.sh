@@ -47,13 +47,13 @@ echo ""
 # 步骤 0: 证书检查和同步（除非指定 -skipCert）
 if [ "$SKIP_CERT" = false ]; then
     echo -e "${YELLOW}[0/4] 检查并同步证书...${NC}"
-    if [ -f "./scripts/check-cert.sh" ]; then
-        if ! ./scripts/check-cert.sh; then
+    if [ -f "./scripts/load_new_cert.sh" ]; then
+        if ! ./scripts/load_new_cert.sh; then
             echo -e "${RED}错误：证书检查失败，使用 -skipCert 参数跳过${NC}"
             exit 1
         fi
     else
-        echo -e "${YELLOW}警告：找不到 check-cert.sh 脚本，跳过证书检查${NC}"
+        echo -e "${YELLOW}警告：找不到 load_new_cert.sh 脚本，跳过证书检查${NC}"
     fi
     echo ""
 else
