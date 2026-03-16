@@ -68,10 +68,40 @@ echo ">>> 正在同步通配符证书到 Higress (K8s Secret)..."
     --set-namespace higress-system
 
 echo ">>> 正在上传证书到阿里云 CLB..."
-export CLB_REGION
-export CLB_CERT_NAME
-~/.acme.sh/acme.sh --deploy -d caringfamily.cn --deploy-hook aliyun
-echo "    证书已上传到 CLB: $CLB_CERT_NAME"
+CERT_DIR="$HOME/.acme.sh/caringfamily.cn_ecc"
+CERT_FILE="$CERT_DIR/fullchain.cer"
+KEY_FILE="$CERT_DIR/caringfamily.cn.key"
+
+if [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; then
+    if command -v aliyun &> /dev/null; then
+        # 检查是否已存在同名证书
+        EXISTING_CERT=$(aliyun slb DescribeServerCertificates \
+            --RegionId "$CLB_REGION" \
+            --ServerCertificateName "$CLB_CERT_NAME" 2>/dev/null | grep -o '"ServerCertificateId":"[^"]*"' | head -1 | cut -d'"' -f4)
+        
+        if [ -n "$EXISTING_CERT" ]; then
+            echo "    发现已有证书，创建新版本..."
+            NEW_CERT_NAME="${CLB_CERT_NAME}-$(date +%Y%m%d)"
+        else
+            NEW_CERT_NAME="$CLB_CERT_NAME"
+        fi
+        
+        # 上传证书
+        aliyun slb UploadServerCertificate \
+            --RegionId "$CLB_REGION" \
+            --ServerCertificate "$(cat "$CERT_FILE")" \
+            --PrivateKey "$(cat "$KEY_FILE")" \
+            --ServerCertificateName "$NEW_CERT_NAME" \
+            --ResourceGroupId default
+        
+        echo "    证书已上传到 CLB: $NEW_CERT_NAME"
+        echo "    注意: 请在阿里云控制台更新 CLB 监听器绑定的证书"
+    else
+        echo "    [警告] 未找到阿里云 CLI，跳过 CLB 证书上传"
+    fi
+else
+    echo "    [错误] 证书文件不存在"
+fi
 
 # --- 2. 检查并部署 res 专用证书 ---
 echo ""
@@ -89,9 +119,27 @@ else
     echo "    证书有效期充足，跳过申请"
 fi
 
-# 始终执行部署到 CDN
+# 始终执行部署到 CDN（如果 ali_cdn 钩子存在）
 echo ">>> 正在同步 res 证书到阿里云 CDN..."
-~/.acme.sh/acme.sh --deploy -d res.caringfamily.cn --deploy-hook aliyun
+if [ -f "$HOME/.acme.sh/deploy/ali_cdn.sh" ]; then
+    # 从 acme.sh 配置文件读取阿里云 AccessKey
+    ACME_ACCOUNT_CONF="$HOME/.acme.sh/account.conf"
+    if [ -f "$ACME_ACCOUNT_CONF" ]; then
+        # 读取 SAVED_Ali_Key 和 SAVED_Ali_Secret
+        export Ali_Key=$(grep "^SAVED_Ali_Key=" "$ACME_ACCOUNT_CONF" | cut -d'"' -f2)
+        export Ali_Secret=$(grep "^SAVED_Ali_Secret=" "$ACME_ACCOUNT_CONF" | cut -d'"' -f2)
+    fi
+    
+    if [ -z "$Ali_Key" ] || [ -z "$Ali_Secret" ]; then
+        echo "    [警告] 未找到阿里云 AccessKey，跳过 CDN 证书部署"
+        echo "    请确保 account.conf 中包含 Ali_Key 和 Ali_Secret"
+    else
+        ~/.acme.sh/acme.sh --deploy -d res.caringfamily.cn --deploy-hook ali_cdn
+    fi
+else
+    echo "    [警告] 未找到 ali_cdn 部署钩子，跳过 CDN 证书部署"
+    echo "    如需 CDN 自动部署，请安装: curl -o ~/.acme.sh/deploy/ali_cdn.sh https://raw.githubusercontent.com/acmesh-official/acme.sh/master/deploy/ali_cdn.sh"
+fi
 
 echo ""
 echo ">>> [成功] 证书检查完成。"
