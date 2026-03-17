@@ -5,6 +5,8 @@ metadata:
   namespace: higress-system
   annotations:
     higress.io/backend-protocol: HTTP
+    higress.io/auth-tls-secret: https-server-secret-cacert
+    higress.io/auth-tls-verify-depth: "3"
 spec:
   ingressClassName: higress
   tls:
