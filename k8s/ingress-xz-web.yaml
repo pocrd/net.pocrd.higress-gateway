@@ -7,8 +7,7 @@ metadata:
   namespace: higress-system
   annotations:
     higress.io/backend-protocol: HTTP
-    higress.io/destination: xiaozhi-web
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    higress.io/destination: xiaozhi-web.higress-system.static
 spec:
   ingressClassName: higress
   tls:
@@ -22,7 +21,7 @@ spec:
       - path: /xz
         pathType: Prefix
         backend:
-          resource:
-            apiGroup: networking.higress.io
-            kind: McpBridge
-            name: default
+          service:
+            name: xiaozhi-web.higress-system.static
+            port:
+              number: 8085
