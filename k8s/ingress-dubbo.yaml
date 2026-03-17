@@ -25,7 +25,7 @@ spec:
       - path: /dapi
         pathType: Prefix
         backend:
-          resource:
-            apiGroup: networking.higress.io
-            kind: McpBridge
-            name: default
+         service:
+           name: higress-gateway
+            prt:
+              number: 80
