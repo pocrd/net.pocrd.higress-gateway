@@ -83,7 +83,7 @@ spec:
             requests:
               memory: 512Mi
             limits:
-              memory: 1.5Gi
+              memory: 1Gi
           volumeMounts:
             - name: data
               mountPath: /home/nacos/data

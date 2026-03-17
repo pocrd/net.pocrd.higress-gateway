@@ -34,11 +34,11 @@ controller:
   
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
+      cpu: 100m
+      memory: 256Mi
     limits:
       cpu: 200m
-      memory: 256Mi
+      memory: 512Mi
 
 # Higress Gateway 配置
 gateway:
@@ -55,11 +55,11 @@ gateway:
   # 资源限制
   resources:
     requests:
-      cpu: 50m
-      memory: 256Mi
+      cpu: 500m
+      memory: 512Mi
     limits:
-      cpu: 300m
-      memory: 768Mi
+      cpu: 1000m
+      memory: 1.5Gi
   
   # Service 配置
   service:
