@@ -26,9 +26,7 @@ spec:
     type: static
     domain: 172.24.137.197
     port: 8091
-    httpPath: /
   - name: xiaozhi-web
     type: static
     domain: 172.24.137.197
     port: 8085
-    httpPath: /
