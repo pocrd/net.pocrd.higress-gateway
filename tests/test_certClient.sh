@@ -19,9 +19,9 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 CERT_DIR="${PROJECT_ROOT}/certs/files/caring"
 
 # 使用 device001 的 fullchain 证书（包含完整证书链）
-CA_CERT="${CERT_DIR}/caring.crt"
-CLIENT_CERT="${CERT_DIR}/factory1/devices/device001/device001-fullchain.crt"
-CLIENT_KEY="${CERT_DIR}/factory1/devices/device001/device001.key"
+CA_CERT="${CERT_DIR}/bagua.crt"
+CLIENT_CERT="${CERT_DIR}/testFactory/devices/device001/device001-fullchain.crt"
+CLIENT_KEY="${CERT_DIR}/testFactory/devices/device001/device001.key"
 
 # 测试配置
 MAX_TIME=10

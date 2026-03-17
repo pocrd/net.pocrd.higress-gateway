@@ -15,31 +15,31 @@ REQUEST_BODY='{"name1":"张三","name2":"李四"}'
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 CERT_DIR="${PROJECT_ROOT}/certs/files/caring"
-CA_CERT="${CERT_DIR}/caring.crt"
-CLIENT_CERT="${CERT_DIR}/factory1/devices/device001/device001.crt"
-CLIENT_KEY="${CERT_DIR}/factory1/devices/device001/device001.key"
+CA_CERT="${CERT_DIR}/bagua.crt"
+CLIENT_CERT="${CERT_DIR}/testFactory/devices/device001/device001.crt"
+CLIENT_KEY="${CERT_DIR}/testFactory/devices/device001/device001.key"
 
 # 错误证书路径（使用 device005 的证书）
-WRONG_CERT="${CERT_DIR}/factory1/devices/device005/device005.crt"
-WRONG_KEY="${CERT_DIR}/factory1/devices/device005/device005.key"
+WRONG_CERT="${CERT_DIR}/testFactory/devices/device005/device005.crt"
+WRONG_KEY="${CERT_DIR}/testFactory/devices/device005/device005.key"
 
 # Fullchain 证书路径（device001-fullchain.crt，包含完整证书链）
-FULLCHAIN_CERT="${CERT_DIR}/factory1/devices/device001/device001-fullchain.crt"
-FULLCHAIN_KEY="${CERT_DIR}/factory1/devices/device001/device001.key"
+FULLCHAIN_CERT="${CERT_DIR}/testFactory/devices/device001/device001-fullchain.crt"
+FULLCHAIN_KEY="${CERT_DIR}/testFactory/devices/device001/device001.key"
 
 # Device002 证书和私钥路径（用于证书密钥不匹配测试）
-DEVICE002_CERT="${CERT_DIR}/factory1/devices/device002/device002.crt"
-DEVICE002_KEY="${CERT_DIR}/factory1/devices/device002/device002.key"
-DEVICE002_FULLCHAIN="${CERT_DIR}/factory1/devices/device002/device002-fullchain.crt"
+DEVICE002_CERT="${CERT_DIR}/testFactory/devices/device002/device002.crt"
+DEVICE002_KEY="${CERT_DIR}/testFactory/devices/device002/device002.key"
+DEVICE002_FULLCHAIN="${CERT_DIR}/testFactory/devices/device002/device002-fullchain.crt"
 
 # Device003 证书路径（用于不同设备证书测试）
-DEVICE003_CERT="${CERT_DIR}/factory1/devices/device003/device003.crt"
-DEVICE003_KEY="${CERT_DIR}/factory1/devices/device003/device003.key"
-DEVICE003_FULLCHAIN="${CERT_DIR}/factory1/devices/device003/device003-fullchain.crt"
+DEVICE003_CERT="${CERT_DIR}/testFactory/devices/device003/device003.crt"
+DEVICE003_KEY="${CERT_DIR}/testFactory/devices/device003/device003.key"
+DEVICE003_FULLCHAIN="${CERT_DIR}/testFactory/devices/device003/device003-fullchain.crt"
 
 # Factory2 证书路径（不同工厂CA签发的证书）
-FACTORY2_CERT="${CERT_DIR}/factory2/factory2.crt"
-FACTORY2_KEY="${CERT_DIR}/factory2/factory2.key"
+FACTORY2_CERT="${CERT_DIR}/testFactory2/testFactory2.crt"
+FACTORY2_KEY="${CERT_DIR}/testFactory2/testFactory2.key"
 
 # HTTP 证书（非设备证书）
 HTTP_CERT="${CERT_DIR}/http/http.crt"
