@@ -35,7 +35,7 @@ controller:
   resources:
     requests:
       cpu: 100m
-      memory: 256Mi
+      memory: 128Mi
     limits:
       cpu: 200m
       memory: 512Mi
@@ -55,11 +55,11 @@ gateway:
   # 资源限制
   resources:
     requests:
-      cpu: 500m
+      cpu: 300m
       memory: 512Mi
     limits:
       cpu: 1000m
-      memory: 1.5Gi
+      memory: 1Gi
   
   # Service 配置
   service:
