@@ -7,7 +7,7 @@ metadata:
   namespace: higress-system
   annotations:
     higress.io/backend-protocol: HTTP
-    higress.io/destination: xiaozhi-server.static
+    higress.io/destination: xiaozhi-server
     higress.io/auth-tls-secret: https-server-secret-cacert
     higress.io/auth-tls-verify-depth: "3"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
