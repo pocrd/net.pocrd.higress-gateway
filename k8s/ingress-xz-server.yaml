@@ -8,10 +8,10 @@ metadata:
 spec:
   ingressClassName: higress
   tls:
-  - hosts: ["x.caringfamily.cn"]
+  - hosts: ["xz.caringfamily.cn"]
     secretName: https-server-secret
   rules:
-  - host: x.caringfamily.cn
+  - host: xz.caringfamily.cn
     http:
       paths:
       - path: /api
