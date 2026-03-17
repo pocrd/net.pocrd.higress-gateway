@@ -1,4 +1,4 @@
-apiVersion: networking.higress.io/v1
+apiVersion: networking.higress.io/v1alpha1
 kind: McpBridge
 metadata:
   name: default
