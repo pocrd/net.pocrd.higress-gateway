@@ -16,7 +16,7 @@ REQUEST_BODY='{"name1":"张三","name2":"李四"}'
 # 证书路径
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-CERT_DIR="${PROJECT_ROOT}/certs/files/caring"
+CERT_DIR="${PROJECT_ROOT}/certs/files/bagua"
 
 # 使用 device001 的 fullchain 证书（包含完整证书链）
 CA_CERT="${CERT_DIR}/bagua.crt"

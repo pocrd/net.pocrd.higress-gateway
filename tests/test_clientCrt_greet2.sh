@@ -14,7 +14,7 @@ REQUEST_BODY='{"name1":"张三","name2":"李四"}'
 # 证书路径
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-CERT_DIR="${PROJECT_ROOT}/certs/files/caring"
+CERT_DIR="${PROJECT_ROOT}/certs/files/bagua"
 CA_CERT="${CERT_DIR}/bagua.crt"
 CLIENT_CERT="${CERT_DIR}/testFactory/devices/device001/device001.crt"
 CLIENT_KEY="${CERT_DIR}/testFactory/devices/device001/device001.key"
