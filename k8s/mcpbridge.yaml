@@ -29,4 +29,4 @@ spec:
   - name: xiaozhi-web
     type: static
     domain: 172.24.137.197  # 替换为实际 IP
-    port: 8084
+    port: 8085
