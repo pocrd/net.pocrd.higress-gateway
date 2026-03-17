@@ -38,3 +38,4 @@ logs/
 Thumbs.db
 
 certs/third-assigned
+certs/**/*.key

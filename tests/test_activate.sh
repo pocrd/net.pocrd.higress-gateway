@@ -66,10 +66,22 @@ fi
 
 # ==================== 步骤 3: 获取固件信息 ====================
 echo -e "\n[步骤 3] 获取固件信息..."
-FIRMWARE_RESPONSE=$(curl -s -w "\n%{http_code}" -X GET "${SERVER_URL}/api/device/ota/" \
+FIRMWARE_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${SERVER_URL}/api/device/ota" \
   -H "Content-Type: application/json" \
+  -H "x-dubbo-device-id: ${DEVICE_MAC}" \
   --cert "${CLIENT_CERT}" \
-  --key "${CLIENT_KEY}")
+  --key "${CLIENT_KEY}" \
+  -d "{
+    \"mac_address\": \"${DEVICE_MAC}\",
+    \"chip_model_name\": \"ESP32-S3\",
+    \"application\": {
+      \"version\": \"1.0.0\"
+    },
+    \"board\": {
+      \"ssid\": \"TestWiFi\",
+      \"type\": \"esp32\"
+    }
+  }")
 
 FIRMWARE_BODY=$(echo "${FIRMWARE_RESPONSE}" | sed '$d')
 FIRMWARE_CODE=$(echo "${FIRMWARE_RESPONSE}" | tail -n 1)
