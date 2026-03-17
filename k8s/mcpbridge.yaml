@@ -24,9 +24,11 @@ spec:
       - PUBLIC-GROUP
   - name: xiaozhi-server
     type: static
-    domain: 172.24.137.197  # 或实际 IP
+    domain: 172.24.137.197
     port: 8091
+    httpPath: /
   - name: xiaozhi-web
     type: static
-    domain: 172.24.137.197  # 替换为实际 IP
+    domain: 172.24.137.197
     port: 8085
+    httpPath: /
