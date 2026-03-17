@@ -22,6 +22,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: xiaozhi-web.higress-system.static
+            name: default
             port:
               number: 8085

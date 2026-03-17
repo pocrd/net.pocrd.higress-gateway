@@ -26,13 +26,13 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: xiaozhi-server.higress-system.static
+            name: default
             port:
               number: 8091
       - path: /ws
         pathType: Prefix
         backend:
           service:
-            name: xiaozhi-server.higress-system.static
+            name: default
             port:
               number: 8091

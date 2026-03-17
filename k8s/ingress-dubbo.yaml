@@ -26,6 +26,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: dubbo-service.higress-system.nacos 
+            name: default
             port:
               number: 8848
