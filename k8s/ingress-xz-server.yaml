@@ -30,13 +30,6 @@ spec:
             name: xiaozhi-server-static
             port:
               number: 8091
-      - path: /static
-        pathType: Prefix
-        backend:
-          service:
-            name: xiaozhi-server-static
-            port:
-              number: 8091
       - path: /audio
         pathType: Prefix
         backend:
