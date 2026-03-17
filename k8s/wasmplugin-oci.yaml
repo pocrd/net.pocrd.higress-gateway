@@ -4,7 +4,7 @@
 ---
 # 1. 认证插件 - auth-plugin
 # 用于 API 请求的认证和鉴权
-apiVersion: extensions.higress.io/v1
+apiVersion: extensions.higress.io/v1alpha1
 kind: WasmPlugin
 metadata:
   name: auth-plugin
