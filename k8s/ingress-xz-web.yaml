@@ -1,18 +1,14 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  labels:
-    managed-by: higress-deploy
   name: xiaozhi-web-ingress
   namespace: higress-system
   annotations:
     higress.io/backend-protocol: HTTP
-    higress.io/destination: xiaozhi-web.higress-system.static
 spec:
   ingressClassName: higress
   tls:
-  - hosts:
-    - xz.caringfamily.cn
+  - hosts: ["xz.caringfamily.cn"]
     secretName: https-server-secret
   rules:
   - host: xz.caringfamily.cn
@@ -22,6 +18,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: default
+            name: xiaozhi-web-static
             port:
               number: 8085

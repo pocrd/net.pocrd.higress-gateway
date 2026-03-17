@@ -5,10 +5,6 @@ metadata:
   namespace: higress-system
 spec:
   registries:
-    - name: higress-console
-      type: static
-      domain: 127.0.0.1
-      port: 8001  # 注意：这里应该是控制台真实的监听端口
     - name: nacos
       type: nacos2
       domain: nacos
@@ -16,11 +12,3 @@ spec:
       nacosNamespaceId: public
       nacosGroups:
         - PUBLIC-GROUP
-    - name: xiaozhi-server
-      type: static
-      domain: 172.24.137.197
-      port: 8091
-    - name: xiaozhi-web
-      type: static
-      domain: 172.24.137.197
-      port: 8085
