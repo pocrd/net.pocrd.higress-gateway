@@ -137,7 +137,7 @@ if [ -d "k8s" ]; then
     echo "  正在通过 Server-Side Apply 应用配置..."
     # --server-side: 解决所有 resourceVersion 冲突，是 K8s 1.22+ 的推荐做法
     # --force-conflicts: 确保本地 YAML 始终覆盖集群状态
-    kubectl apply -f k8s/ -n higress-system --server-side --force-conflicts #--prune -l managed-by=higress-deploy
+    kubectl apply -f k8s/ -n higress-system --server-side --force-conflicts
 else
     echo -e "${YELLOW}  跳过：未找到 k8s/ 目录${NC}"
 fi
