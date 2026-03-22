@@ -173,22 +173,13 @@ check_oras() {
 check_acr_login() {
     local registry=$1
     
-    # 方法 1: 检查 oras 是否已登录
+    # 方法 1: 检查 oras 是否已登录（最可靠）
     if oras resolve "${registry}/${ACR_REPOSITORY}/auth-plugin:v1.0.0" &>/dev/null 2>&1; then
+        echo -e "${GREEN}  检测到有效的 oras 登录凭证${NC}"
         return 0
     fi
     
-    # 方法 2: 检查 docker 是否已登录（oras 可以复用 docker 的认证信息）
-    # docker 的认证信息存储在 ~/.docker/config.json
-    if [ -f "$HOME/.docker/config.json" ]; then
-        # 检查是否有该仓库的认证信息
-        if grep -q "${registry}" "$HOME/.docker/config.json" 2>/dev/null; then
-            echo -e "${GREEN}  检测到 Docker 登录信息，oras 将复用${NC}"
-            return 0
-        fi
-    fi
-    
-    # 方法 3: 尝试直接推送测试（最可靠的方式）
+    # 方法 2: 尝试直接推送测试（验证 docker 凭证是否有效）
     local test_tag="test-login-$(date +%s)"
     local tmp_dir=$(mktemp -d)
     echo "{}" > "${tmp_dir}/test.json"
@@ -199,6 +190,7 @@ check_acr_login() {
         # 清理测试镜像
         oras delete "${registry}/${ACR_REPOSITORY}/${test_tag}:test" &>/dev/null 2>&1 || true
         rm -rf "$tmp_dir"
+        echo -e "${GREEN}  Docker 凭证有效，oras 可以复用${NC}"
         return 0
     fi
     
