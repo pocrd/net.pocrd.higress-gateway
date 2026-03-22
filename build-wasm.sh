@@ -173,28 +173,59 @@ check_oras() {
 check_acr_login() {
     local registry=$1
     
+    echo -e "${YELLOW}  正在检查 ACR 登录状态...${NC}"
+    
     # 方法 1: 检查 oras 是否已登录（最可靠）
     if oras resolve "${registry}/${ACR_REPOSITORY}/auth-plugin:v1.0.0" &>/dev/null 2>&1; then
-        echo -e "${GREEN}  检测到有效的 oras 登录凭证${NC}"
+        echo -e "${GREEN}  ✓ 检测到有效的 oras 登录凭证${NC}"
         return 0
     fi
+    echo -e "${YELLOW}  ✗ oras 未登录或凭证无效${NC}"
     
-    # 方法 2: 尝试直接推送测试（验证 docker 凭证是否有效）
-    local test_tag="test-login-$(date +%s)"
-    local tmp_dir=$(mktemp -d)
-    echo "{}" > "${tmp_dir}/test.json"
-    
-    if oras push "${registry}/${ACR_REPOSITORY}/${test_tag}:test" \
-        --config "${tmp_dir}/test.json:application/vnd.oci.image.config.v1+json" \
-        "${tmp_dir}/test.json:application/octet-stream" &>/dev/null 2>&1; then
-        # 清理测试镜像
-        oras delete "${registry}/${ACR_REPOSITORY}/${test_tag}:test" &>/dev/null 2>&1 || true
-        rm -rf "$tmp_dir"
-        echo -e "${GREEN}  Docker 凭证有效，oras 可以复用${NC}"
-        return 0
+    # 方法 2: 检查 Docker config.json 中是否有有效的 auth 字段
+    if [ -f "$HOME/.docker/config.json" ]; then
+        echo -e "${YELLOW}  检查 Docker config.json...${NC}"
+        
+        # 检查是否有该仓库的 auth 认证信息（不是空对象）
+        if grep -q "\"${registry}\"" "$HOME/.docker/config.json" 2>/dev/null; then
+            echo -e "${YELLOW}  找到仓库配置：${registry}${NC}"
+            
+            # 进一步检查是否有 auth 字段
+            if grep -A 1 "\"${registry}\"" "$HOME/.docker/config.json" | grep -q '"auth"'; then
+                echo -e "${GREEN}  ✓ 检测到 Docker 认证凭据，尝试使用${NC}"
+                
+                # 尝试推送测试镜像验证凭据是否有效（使用与 push_oci_image 相同的参数）
+                local test_tag="test-login-$(date +%s)"
+                local tmp_dir=$(mktemp -d)
+                
+                # 创建测试文件
+                echo "{}" > "${tmp_dir}/config.json"
+                echo "test" > "${tmp_dir}/test.wasm"
+                (cd "$tmp_dir" && tar -czf layer.tar.gz test.wasm)
+                
+                echo -e "${YELLOW}  尝试推送测试镜像验证凭据...${NC}"
+                if oras push "${registry}/${ACR_REPOSITORY}/${test_tag}:test" \
+                    --disable-path-validation \
+                    --config "${tmp_dir}/config.json:application/vnd.oci.image.config.v1+json" \
+                    "${tmp_dir}/layer.tar.gz:application/vnd.oci.image.layer.v1.tar+gzip" &>/dev/null 2>&1; then
+                    # 清理测试镜像
+                    oras delete "${registry}/${ACR_REPOSITORY}/${test_tag}:test" &>/dev/null 2>&1 || true
+                    rm -rf "$tmp_dir"
+                    echo -e "${GREEN}  ✓ Docker 凭证有效，oras 可以复用${NC}"
+                    return 0
+                fi
+                
+                rm -rf "$tmp_dir"
+                echo -e "${RED}  ✗ Docker 凭据已过期或无效，请重新登录${NC}"
+            else
+                echo -e "${YELLOW}  ✗ Docker 配置中缺少 auth 字段，请重新登录${NC}"
+            fi
+        else
+            echo -e "${YELLOW}  ✗ Docker 配置中未找到仓库：${registry}${NC}"
+        fi
+    else
+        echo -e "${YELLOW}  ✗ Docker config.json 不存在${NC}"
     fi
-    
-    rm -rf "$tmp_dir"
     
     # 打印详细的登录提示信息
     echo ""
