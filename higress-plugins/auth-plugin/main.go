@@ -5,7 +5,6 @@ import (
 
 	"github.com/higress-group/proxy-wasm-go-sdk/proxywasm"
 	"github.com/higress-group/proxy-wasm-go-sdk/proxywasm/types"
-	"github.com/higress-group/wasm-go/pkg/log"
 	"github.com/higress-group/wasm-go/pkg/wrapper"
 	"github.com/tidwall/gjson"
 )
@@ -35,10 +34,8 @@ func onHttpRequestHeaders(ctx wrapper.HttpContext, config AuthConfig) types.Acti
 	//从 XFCC (x-forwarded-client-cert) 头提取客户端证书信息
 	xfcc, _ := proxywasm.GetHttpRequestHeader("x-forwarded-client-cert")
 	if xfcc != "" {
-		log.Warnf("xfcc raw: %s", xfcc)
 		cn := extractField(xfcc, "CN=")
 		if cn != "" {
-			log.Warnf("extracted cn: [%s]", cn)
 			proxywasm.ReplaceHttpRequestHeader("x-dubbo-device-id", cn)
 		}
 	}
