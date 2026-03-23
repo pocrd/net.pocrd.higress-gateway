@@ -137,7 +137,7 @@ if [ -d "k8s" ]; then
     # 检查 wasmplugin-oci.yaml 中的镜像标签
     if [ -f "k8s/wasmplugin-oci.yaml" ]; then
         echo "  检查 WASM 插件镜像标签..."
-        local yaml_tag=$(grep "caringfamily/auth-plugin:" k8s/wasmplugin-oci.yaml | head -1 | sed 's/.*caringfamily\/auth-plugin:\([^ ]*\).*/\1/')
+        yaml_tag=$(grep "caringfamily/auth-plugin:" k8s/wasmplugin-oci.yaml | head -1 | sed 's/.*caringfamily\/auth-plugin:\([^ ]*\).*/\1/')
         if [ -n "$yaml_tag" ]; then
             echo "    当前使用镜像标签：${yaml_tag}"
         fi
