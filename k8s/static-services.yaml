@@ -7,16 +7,20 @@ spec:
   ports:
     - port: 8085
 ---
-apiVersion: v1
-kind: Endpoints
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
 metadata:
   name: xiaozhi-web-static
   namespace: higress-system
-subsets:
+  labels:
+    kubernetes.io/service-name: xiaozhi-web-static
+addressType: IPv4
+endpoints:
   - addresses:
-      - ip: 172.24.137.197
-    ports:
-      - port: 8085
+      - 172.24.137.197
+ports:
+  - port: 8085
+    protocol: TCP
 ---
 apiVersion: v1
 kind: Service
@@ -27,16 +31,20 @@ spec:
   ports:
     - port: 8091
 ---
-apiVersion: v1
-kind: Endpoints
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
 metadata:
   name: xiaozhi-server-static
   namespace: higress-system
-subsets:
+  labels:
+    kubernetes.io/service-name: xiaozhi-server-static
+addressType: IPv4
+endpoints:
   - addresses:
-      - ip: 172.24.137.197
-    ports:
-      - port: 8091
+      - 172.24.137.197
+ports:
+  - port: 8091
+    protocol: TCP
 ---
 apiVersion: v1
 kind: Service
@@ -48,13 +56,17 @@ spec:
     - port: 80
       targetPort: 8001 # 控制台监听的真实端口
 ---
-apiVersion: v1
-kind: Endpoints
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
 metadata:
   name: higress-console-static
   namespace: higress-system
-subsets:
+  labels:
+    kubernetes.io/service-name: higress-console-static
+addressType: IPv4
+endpoints:
   - addresses:
-      - ip: 172.24.137.195 # 必须用物理内网 IP，不能用 127.0.0.1
-    ports:
-      - port: 8001
+      - 172.24.137.195 # 必须用物理内网 IP，不能用 127.0.0.1
+ports:
+  - port: 8001
+    protocol: TCP
