@@ -142,7 +142,45 @@ print_sha256() {
 ACR_REGISTRY_VPC="crpi-76icqljpukx0sgec-vpc.cn-hangzhou.personal.cr.aliyuncs.com"
 ACR_REGISTRY_PUBLIC="crpi-76icqljpukx0sgec.cn-hangzhou.personal.cr.aliyuncs.com"
 ACR_REPOSITORY="caringfamily"
-OCI_TAG="${OCI_TAG:-v1.0.1}"
+# 版本号管理策略：
+# 1. 自动检测 k8s/wasmplugin-oci.yaml 中当前部署的版本号
+# 2. 如果 YAML 版本号 >= 脚本默认版本：使用 YAML 版本号 +1（基于已部署版本递增）
+# 3. 如果 YAML 版本号 < 脚本默认版本：使用脚本默认版本（新版本覆盖旧版本）
+# 4. 可通过 OCI_TAG 环境变量手动指定版本
+#
+# 版本规则：MAJOR.MINOR.PATCH (语义化版本)
+#   - MAJOR: 重大变更（不兼容的 API 变更）
+#   - MINOR: 功能增强（向下兼容的功能新增）
+#   - PATCH: 问题修复（向下兼容的问题修复）
+DEFAULT_TAG="v1.0.2"
+
+# 自动检测并确定版本号
+determine_version() {
+    local yaml_file="k8s/wasmplugin-oci.yaml"
+    
+    # 如果 YAML 文件存在，检测其中使用的版本号
+    if [ -f "$yaml_file" ]; then
+        local yaml_version=$(grep "caringfamily/auth-plugin:" "$yaml_file" 2>/dev/null | head -1 | sed 's/.*caringfamily\/auth-plugin:\([^ ]*\).*/\1/')
+        if [ -n "$yaml_version" ]; then
+            # 比较 PATCH 版本号
+            local default_patch=$(echo "$DEFAULT_TAG" | sed 's/v[0-9]*\.[0-9]*\.\([0-9]*\)/\1/')
+            local yaml_patch=$(echo "$yaml_version" | sed 's/v[0-9]*\.[0-9]*\.\([0-9]*\)/\1/')
+            
+            # 如果 YAML 版本 >= 默认版本，递增 YAML 的 PATCH 版本
+            if [ "$yaml_patch" -ge "$default_patch" ] 2>/dev/null; then
+                local new_patch=$((yaml_patch + 1))
+                echo "$yaml_version" | sed "s/\.${yaml_patch}$/.${new_patch}/"
+                return
+            fi
+        fi
+    fi
+    
+    # 否则使用脚本默认版本
+    echo "$DEFAULT_TAG"
+}
+
+# 确定最终使用的 OCI_TAG
+OCI_TAG="${OCI_TAG:-$(determine_version)}"
 
 # 获取有效的 ACR 仓库地址（优先内网，失败则用公网）
 get_acr_registry() {
@@ -289,11 +327,23 @@ push_oci_image() {
         --disable-path-validation \
         --config "${tmp_dir}/config.json:application/vnd.oci.image.config.v1+json" \
         "${tmp_dir}/layer.tar.gz:application/vnd.oci.image.layer.v1.tar+gzip"; then
-        echo -e "    ${GREEN}成功: ${image_url}${NC}"
+        echo -e "    ${GREEN}成功：${image_url}${NC}"
+        
+        # 推送成功后，更新 k8s/wasmplugin-oci.yaml 中的镜像引用
+        local yaml_file="k8s/wasmplugin-oci.yaml"
+        if [ -f "$yaml_file" ]; then
+            local old_tag=$(grep "caringfamily/${plugin_name}:" "$yaml_file" 2>/dev/null | head -1 | sed 's/.*caringfamily\/'"${plugin_name}"':\([^ ]*\).*/\1/')
+            if [ -n "$old_tag" ]; then
+                sed -i.bak "s|caringfamily/${plugin_name}:[^[:space:]]*|caringfamily/${plugin_name}:${OCI_TAG}|g" "$yaml_file"
+                rm -f "${yaml_file}.bak"
+                echo -e "    ${GREEN}已更新 YAML: ${old_tag} -> ${OCI_TAG}${NC}"
+            fi
+        fi
+        
         echo "    在 k8s/wasmplugin-oci.yaml 中使用:"
         echo "      url: oci://${image_url}"
     else
-        echo -e "    ${RED}失败: ${image_url}${NC}"
+        echo -e "    ${RED}失败：${image_url}${NC}"
         rm -rf "$tmp_dir"
         return 1
     fi
@@ -360,8 +410,19 @@ main() {
                 echo "  --oci-only    仅推送 OCI 镜像（不编译）"
                 echo "  -h, --help    显示帮助"
                 echo ""
+                echo "版本管理策略:"
+                echo "  自动检测 k8s/wasmplugin-oci.yaml 中的版本号，智能确定新版本："
+                echo "    - YAML 版本 >= 默认版本：新版本 = YAML 版本 +1 (基于已部署版本递增)"
+                echo "    - YAML 版本 < 默认版本：新版本 = 默认版本 (使用脚本中的新版本)"
+                echo "    - 脚本默认版本：v1.0.2 (手动维护，不会被自动修改)"
+                echo ""
                 echo "环境变量:"
-                echo "  OCI_TAG       OCI 镜像标签 (默认: v1.0.1)"
+                echo "  OCI_TAG       OCI 镜像标签 (手动指定版本，覆盖自动递增逻辑)"
+                echo ""
+                echo "版本规则：MAJOR.MINOR.PATCH"
+                echo "  - MAJOR: 重大变更（不兼容的 API 变更）"
+                echo "  - MINOR: 功能增强（向下兼容的功能新增）"
+                echo "  - PATCH: 问题修复（向下兼容的问题修复）"
                 echo ""
                 echo "阿里云 ACR 配置:"
                 echo "  内网仓库: ${ACR_REGISTRY_VPC}"

@@ -134,6 +134,15 @@ helm upgrade --install higress higress/higress-core \
 echo -e "${YELLOW}[3/4] 同步业务配置...${NC}"
 
 if [ -d "k8s" ]; then
+    # 检查 wasmplugin-oci.yaml 中的镜像标签
+    if [ -f "k8s/wasmplugin-oci.yaml" ]; then
+        echo "  检查 WASM 插件镜像标签..."
+        local yaml_tag=$(grep "caringfamily/auth-plugin:" k8s/wasmplugin-oci.yaml | head -1 | sed 's/.*caringfamily\/auth-plugin:\([^ ]*\).*/\1/')
+        if [ -n "$yaml_tag" ]; then
+            echo "    当前使用镜像标签：${yaml_tag}"
+        fi
+    fi
+    
     echo "  正在通过 Server-Side Apply 应用配置..."
     # --server-side: 解决所有 resourceVersion 冲突，是 K8s 1.22+ 的推荐做法
     # --force-conflicts: 确保本地 YAML 始终覆盖集群状态
