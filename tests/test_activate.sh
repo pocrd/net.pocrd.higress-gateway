@@ -3,8 +3,8 @@
 # ==================== 配置参数 ====================
 DEVICE_MAC="AA:BB:CC:DD:EE:FF"  # 替换为实际 MAC 地址
 SERVER_URL="https://xz.caringfamily.cn"
-CLIENT_CERT="../certs/files/bagua/testFactory/devices/device003/device003-fullchain.crt"    # 客户端证书
-CLIENT_KEY="../certs/files/bagua/testFactory/devices/device003/device003.key"      # 客户端私钥
+CLIENT_CERT="../certs/files/bagua/testFactory/devices/device004/device004-fullchain.crt"    # 客户端证书
+CLIENT_KEY="../certs/files/bagua/testFactory/devices/device004/device004.key"      # 客户端私钥
 
 echo "======================================"
 echo "OTA 激活流程测试"
