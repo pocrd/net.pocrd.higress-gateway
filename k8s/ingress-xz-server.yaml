@@ -7,10 +7,9 @@ metadata:
     higress.io/backend-protocol: HTTP
     higress.io/auth-tls-secret: https-server-secret-cacert
     higress.io/auth-tls-verify-depth: "3"
-    # 连接池优化配置（ESP32 HTTP/1.1 场景）
-    higress.io/upstream-keepalive-requests: "1000"    # 单个连接最大请求数
-    higress.io/upstream-keepalive-timeout: "300"      # 空闲超时 5 分钟
-    higress.io/upstream-idle-timeout: "300s"          # 空闲连接超时
+    higress.io/keepalive-timeout: "120s"
+    higress.io/keepalive-requests: "1000"
+    higress.io/websocket-idle-timeout: "300s"
 spec:
   ingressClassName: higress
   tls:

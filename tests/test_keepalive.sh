@@ -11,6 +11,10 @@ BASE_URL="https://xz.caringfamily.cn"
 CLIENT_CERT="../certs/files/bagua/testFactory/devices/device001/device001-fullchain.crt"
 CLIENT_KEY="../certs/files/bagua/testFactory/devices/device001/device001.key"
 
+# 使用实际的 OTA 激活接口（参考 test_activate.sh）
+TEST_ENDPOINT="/api/device/ota/activate"
+TEST_METHOD="POST"
+
 echo "=============================================="
 echo "Higress HTTPS/WSS Keepalive 测试"
 echo "=============================================="
@@ -21,11 +25,14 @@ echo ""
 # -----------------------------------------------------------------------------
 echo "测试 1: HTTPS 连接 Keepalive 检测 (HTTP/1.1)"
 echo "----------------------------------------------"
+echo "请求：${TEST_METHOD} ${BASE_URL}${TEST_ENDPOINT}"
+echo ""
 
-RESPONSE=$(curl -s -I -X GET "${BASE_URL}/api/health" \
+RESPONSE=$(curl -s -I -X ${TEST_METHOD} "${BASE_URL}${TEST_ENDPOINT}" \
   --cert "${CLIENT_CERT}" \
   --key "${CLIENT_KEY}" \
   --http1.1 \
+  -H "Content-Type: application/json" \
   -w "\nhttp_code:%{http_code}\ntime_total:%{time_total}\n")
 
 echo "$RESPONSE" | head -20
@@ -55,10 +62,11 @@ TOTAL_TIME=0
 for i in {1..5}; do
     START_TIME=$(date +%s%N)
     
-    curl -s -o /dev/null -w "%{http_code}" -X GET "${BASE_URL}/api/health" \
+    curl -s -o /dev/null -w "%{http_code}" -X ${TEST_METHOD} "${BASE_URL}${TEST_ENDPOINT}" \
       --cert "${CLIENT_CERT}" \
       --key "${CLIENT_KEY}" \
       --http1.1 \
+      -H "Content-Type: application/json" \
       --max-time 5 > /dev/null 2>&1
     
     END_TIME=$(date +%s%N)
@@ -89,19 +97,21 @@ echo "测试 3: HTTP/1.1 Keepalive 详细检测"
 echo "----------------------------------------------"
 
 echo "第一次请求（建立连接）："
-RESP1=$(curl -s -v -X GET "${BASE_URL}/api/health" \
+RESP1=$(curl -s -v -X ${TEST_METHOD} "${BASE_URL}${TEST_ENDPOINT}" \
   --cert "${CLIENT_CERT}" \
   --key "${CLIENT_KEY}" \
   --http1.1 \
+  -H "Content-Type: application/json" \
   -o /dev/null 2>&1 | grep -E "Connection:|< HTTP|Re-using existing connection" || echo "未捕获到关键信息")
 echo "$RESP1"
 echo ""
 
 echo "立即发起第二次请求（期望复用连接）："
-RESP2=$(curl -s -v -X GET "${BASE_URL}/api/health" \
+RESP2=$(curl -s -v -X ${TEST_METHOD} "${BASE_URL}${TEST_ENDPOINT}" \
   --cert "${CLIENT_CERT}" \
   --key "${CLIENT_KEY}" \
   --http1.1 \
+  -H "Content-Type: application/json" \
   -o /dev/null 2>&1 | grep -E "Connection:|< HTTP|Re-using existing connection" || echo "未捕获到关键信息")
 echo "$RESP2"
 echo ""
@@ -124,10 +134,11 @@ echo "----------------------------------------------"
 echo "首次握手（完整 TLS 握手）："
 
 FIRST_HANDSHAKE=$(curl -s -o /dev/null -w "握手时间：%{time_appconnect}s\n总时间：%{time_total}s\n" \
-  -X GET "${BASE_URL}/api/health" \
+  -X ${TEST_METHOD} "${BASE_URL}${TEST_ENDPOINT}" \
   --cert "${CLIENT_CERT}" \
   --key "${CLIENT_KEY}" \
   --http1.1 \
+  -H "Content-Type: application/json" \
   --max-time 10)
 
 echo "$FIRST_HANDSHAKE"
@@ -136,10 +147,11 @@ echo ""
 echo "立即发起第二次请求（期望会话复用）："
 
 SECOND_HANDSHAKE=$(curl -s -o /dev/null -w "握手时间：%{time_appconnect}s\n总时间：%{time_total}s\n" \
-  -X GET "${BASE_URL}/api/health" \
+  -X ${TEST_METHOD} "${BASE_URL}${TEST_ENDPOINT}" \
   --cert "${CLIENT_CERT}" \
   --key "${CLIENT_KEY}" \
   --http1.1 \
+  -H "Content-Type: application/json" \
   --max-time 10)
 
 echo "$SECOND_HANDSHAKE"
@@ -182,10 +194,11 @@ echo "发起 10 个并发请求..."
 START_TIME=$(date +%s%N)
 
 for i in {1..10}; do
-    curl -s -o /dev/null -X GET "${BASE_URL}/api/health" \
+    curl -s -o /dev/null -X ${TEST_METHOD} "${BASE_URL}${TEST_ENDPOINT}" \
       --cert "${CLIENT_CERT}" \
       --key "${CLIENT_KEY}" \
       --http1.1 \
+      -H "Content-Type: application/json" \
       --max-time 10 &
 done
 

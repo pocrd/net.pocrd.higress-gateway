@@ -10,10 +10,10 @@ metadata:
     higress.io/backend-protocol: grpc
     # 这里的 destination 必须精确匹配 Nacos 中的服务全名
     higress.io/destination: providers:com.pocrd.service_demo.api.CRUDServiceHttpExport:1.0.0:public.PUBLIC-GROUP.public.nacos
-    # mTLS 配置：启用可选客户端证书验证
     higress.io/auth-tls-secret: https-server-secret-cacert
     higress.io/auth-tls-verify-depth: "3"
-    higress.io/auth-tls-optional: "true"
+    higress.io/keepalive-timeout: "120s"
+    higress.io/keepalive-requests: "1000"
 spec:
   ingressClassName: higress
   tls:
