@@ -9,7 +9,7 @@ metadata:
     # 保持原有的 Dubbo/gRPC 配置
     higress.io/backend-protocol: grpc
     # 这里的 destination 必须精确匹配 Nacos 中的服务全名
-    higress.io/destination: providers:com.pocrd.service_demo.api.GreeterServiceHttpExport:1.0.0:public.PUBLIC-GROUP.public.nacos
+    higress.io/destination: providers:com.pocrd.dubbo_demo.api.GreeterServiceHttpExport:1.0.0:public.PUBLIC-GROUP.public.nacos
     higress.io/auth-tls-secret: https-server-secret-cacert
     higress.io/auth-tls-verify-depth: "3"
     higress.io/keepalive-timeout: "120s"

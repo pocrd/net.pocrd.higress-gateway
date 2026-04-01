@@ -9,11 +9,11 @@ curl -s "http://${NACOS_HOST}:${NACOS_HTTP_PORT}/nacos/v1/ns/service/list?groupN
 
 echo ""
 echo "=== Dubbo 服务详情 ==="
-curl -s "http://${NACOS_HOST}:${NACOS_HTTP_PORT}/nacos/v1/ns/instance/list?serviceName=providers:com.pocrd.service_demo.api.GreeterServiceHttpExport:1.0.0:public&groupName=PUBLIC-GROUP" | python3 -m json.tool 2>/dev/null || echo "查询失败"
+curl -s "http://${NACOS_HOST}:${NACOS_HTTP_PORT}/nacos/v1/ns/instance/list?serviceName=providers:com.pocrd.dubbo_demo.api.GreeterServiceHttpExport:1.0.0:public&groupName=PUBLIC-GROUP" | python3 -m json.tool 2>/dev/null || echo "查询失败"
 
 echo ""
 echo "=== Dubbo 服务元数据 ==="
-curl -s "http://${NACOS_HOST}:${NACOS_HTTP_PORT}/nacos/v1/ns/instance/list?serviceName=providers:com.pocrd.service_demo.api.GreeterServiceHttpExport:1.0.0:public&groupName=PUBLIC-GROUP" | python3 -c "
+curl -s "http://${NACOS_HOST}:${NACOS_HTTP_PORT}/nacos/v1/ns/instance/list?serviceName=providers:com.pocrd.dubbo_demo.api.GreeterServiceHttpExport:1.0.0:public&groupName=PUBLIC-GROUP" | python3 -c "
 import sys, json
 try:
     data = json.load(sys.stdin)

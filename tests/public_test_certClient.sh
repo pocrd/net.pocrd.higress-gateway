@@ -9,7 +9,7 @@
 set -e
 
 BASE_URL="https://api.caringfamily.cn"
-SERVICE_PATH="/dapi/com.pocrd.service_demo.api.GreeterServiceHttpExport"
+SERVICE_PATH="/dapi/com.pocrd.dubbo_demo.api.GreeterServiceHttpExport"
 METHOD="greet2"
 REQUEST_BODY='{"name1":"张三","name2":"李四"}'
 
