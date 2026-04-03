@@ -23,9 +23,9 @@ spec:
   
   # 匹配条件：应用到指定的 Ingress
   matchRules:
-    - ingress:
-        - dubbo-ingress
-        - xiaozhi-server-ingress
+    - domain:
+        - api.caringfamily.cn
+        - xz.caringfamily.cn
 
 ---
 # 2. 自定义响应插件 - custom-response
