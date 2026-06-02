@@ -50,7 +50,7 @@ FACTORY_CERT_PATH="${FACTORY_DIR}/${FACTORY_NAME}.crt"
 FACTORY_KEY_PATH="${FACTORY_DIR}/${FACTORY_NAME}.key"
 
 if [ ! -f "${FACTORY_CERT_PATH}" ]; then
-    echo "错误: 工厂证书文件不存在: ${FACTORY_CERT_PATH}"
+    echo "错误: 工厂证书文件不存在: ${FACTORY_DIR}"
     exit 1
 fi
 
@@ -76,16 +76,21 @@ create_device_cert() {
     local DEVICE_ID="$1"
     local DEVICE_DIR="${DEVICES_DIR}/${DEVICE_ID}"
     
+    # 【安全防线】如果证书已存在，拒绝覆盖，保护原有数据
+    local DEVICE_KEY="${DEVICE_DIR}/${DEVICE_ID}.key"
+    local DEVICE_CERT="${DEVICE_DIR}/${DEVICE_ID}.crt"
+    if [ -f "${DEVICE_KEY}" ] || [ -f "${DEVICE_CERT}" ]; then
+        echo "  ⚠ 警告: 设备 ${DEVICE_ID} 已经存在，跳过创建以防止覆盖！"
+        return 0
+    fi
+
     echo "----------------------------------------------"
     echo "创建设备: ${DEVICE_ID}"
     
     # 创建设备证书目录
     mkdir -p "${DEVICE_DIR}"
     
-    # 文件名包含设备编号，如 device001.key, device001.crt
-    local DEVICE_KEY="${DEVICE_DIR}/${DEVICE_ID}.key"
     local DEVICE_CSR="${DEVICE_DIR}/${DEVICE_ID}.csr"
-    local DEVICE_CERT="${DEVICE_DIR}/${DEVICE_ID}.crt"
     local DEVICE_FULLCHAIN="${DEVICE_DIR}/${DEVICE_ID}-fullchain.crt"
     
     # 证书信息
@@ -126,9 +131,13 @@ if [[ "${THIRD_PARAM}" =~ ^[0-9]+$ ]]; then
             if [ -d "${dir}" ]; then
                 dir_name=$(basename "${dir}")
                 # 提取数字部分
-                num=$(echo "${dir_name}" | grep -o '[0-9]*' | tail -1)
-                if [ -n "${num}" ] && [ "${num}" -gt "${MAX_NUM}" ]; then
-                    MAX_NUM="${num}"
+                num_raw=$(echo "${dir_name}" | grep -o '[0-9]*' | tail -1)
+                if [ -n "${num_raw}" ]; then
+                    # 【核心修复】利用 10# 强制将字符串作为十进制处理，去除前导零的影响
+                    num=$((10#${num_raw}))
+                    if [ "${num}" -gt "${MAX_NUM}" ]; then
+                        MAX_NUM="${num}"
+                    fi
                 fi
             fi
         done
@@ -149,8 +158,8 @@ if [[ "${THIRD_PARAM}" =~ ^[0-9]+$ ]]; then
         create_device_cert "${DEVICE_ID}"
     done
     
-    # 清理 CA 序列号文件
-    rm -f "${CA_DIR}/${CA_NAME}.srl"
+    # 清理序列号文件（注意修改为工厂目录下的临时 srl 文件，原脚本写成了 CA 目录）
+    rm -f "${FACTORY_DIR}/${FACTORY_NAME}.srl"
     
     echo ""
     echo "=============================================="
@@ -161,6 +170,6 @@ else
     DEVICE_ID="${THIRD_PARAM}"
     create_device_cert "${DEVICE_ID}"
     
-    # 清理 CA 序列号文件
-    rm -f "${CA_DIR}/${CA_NAME}.srl"
+    # 清理序列号文件
+    rm -f "${FACTORY_DIR}/${FACTORY_NAME}.srl"
 fi
