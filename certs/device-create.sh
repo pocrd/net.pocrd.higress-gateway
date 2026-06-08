@@ -102,15 +102,19 @@ create_device_cert() {
     # 生成设备证书请求
     openssl req -new -key "${DEVICE_KEY}" -out "${DEVICE_CSR}" -subj "${DEVICE_SUBJECT}" 2>/dev/null
     
+    local UNIQUE_SERIAL=$(openssl rand 16 | od -An -v -tu8 | tr -d ' \n')
+
     # 使用 中间CA 签发设备证书
     openssl x509 -req -in "${DEVICE_CSR}" -CA "${FACTORY_CERT_PATH}" -CAkey "${FACTORY_KEY_PATH}" \
-        -CAcreateserial -out "${DEVICE_CERT}" -days ${DAYS} 2>/dev/null
+        -set_serial "${UNIQUE_SERIAL}" -out "${DEVICE_CERT}" -days ${DAYS} 
     
     # 生成设备完整证书链（设备证书 + 服务器证书 + CA证书）
     cat "${DEVICE_CERT}" "${FACTORY_CERT_PATH}" > "${DEVICE_FULLCHAIN}"
     
     # 清理临时文件
     rm -f "${DEVICE_CSR}"
+
+    openssl x509 -in "${DEVICE_CERT}" -noout -text | grep -A 1 "Serial Number"
     
     # 设置权限
     chmod 600 "${DEVICE_KEY}"
@@ -158,9 +162,6 @@ if [[ "${THIRD_PARAM}" =~ ^[0-9]+$ ]]; then
         create_device_cert "${DEVICE_ID}"
     done
     
-    # 清理序列号文件（注意修改为工厂目录下的临时 srl 文件，原脚本写成了 CA 目录）
-    rm -f "${FACTORY_DIR}/${FACTORY_NAME}.srl"
-    
     echo ""
     echo "=============================================="
     echo "批量创建完成！共生成 ${COUNT} 个设备证书"
@@ -169,7 +170,4 @@ else
     # 单个设备模式
     DEVICE_ID="${THIRD_PARAM}"
     create_device_cert "${DEVICE_ID}"
-    
-    # 清理序列号文件
-    rm -f "${FACTORY_DIR}/${FACTORY_NAME}.srl"
 fi

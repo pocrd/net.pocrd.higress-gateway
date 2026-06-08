@@ -60,7 +60,7 @@ openssl req -new -key "${SERVER_KEY}" -out "${SERVER_CSR}" -subj "${SERVER_SUBJE
 # 使用 CA 签发服务器证书
 echo "[3/3] 使用 CA 签发服务器证书..."
 openssl x509 -req -in "${SERVER_CSR}" -CA "${CA_CERT_PATH}" -CAkey "${CA_KEY_PATH}" \
-    -CAcreateserial -out "${SERVER_CERT}" -days ${DAYS}
+    -rand_serial -out "${SERVER_CERT}" -days ${DAYS}
 
 # 清理临时文件
 rm -f "${SERVER_CSR}" "${CA_DIR}/${CA_NAME}.srl"

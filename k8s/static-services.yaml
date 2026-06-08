@@ -5,7 +5,7 @@ metadata:
   namespace: higress-system
 spec:
   ports:
-    - port: 8085
+    - port: 8084
 ---
 apiVersion: discovery.k8s.io/v1
 kind: EndpointSlice
@@ -19,7 +19,7 @@ endpoints:
   - addresses:
       - 172.24.137.197
 ports:
-  - port: 8085
+  - port: 8084
     protocol: TCP
 ---
 apiVersion: v1
@@ -44,6 +44,30 @@ endpoints:
       - 172.24.137.197
 ports:
   - port: 8091
+    protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: xiaozhi-dialogue-static
+  namespace: higress-system
+spec:
+  ports:
+    - port: 8092
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: xiaozhi-dialogue-static
+  namespace: higress-system
+  labels:
+    kubernetes.io/service-name: xiaozhi-dialogue-static
+addressType: IPv4
+endpoints:
+  - addresses:
+      - 172.24.137.197
+ports:
+  - port: 8092
     protocol: TCP
 ---
 apiVersion: v1

@@ -30,9 +30,9 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: xiaozhi-server-static
+            name: xiaozhi-dialogue-static
             port:
-              number: 8091
+              number: 8092
       - path: /audio
         pathType: Prefix
         backend:

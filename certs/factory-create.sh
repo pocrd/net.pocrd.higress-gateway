@@ -74,7 +74,7 @@ EOF
 
 # 使用根 CA 签发中间证书，并添加 CA 扩展
 openssl x509 -req -in "${FACTORY_CSR}" -CA "${CA_CERT_PATH}" -CAkey "${CA_KEY_PATH}" \
-    -CAcreateserial -out "${FACTORY_CERT}" -days ${DAYS} \
+    -rand_serial -out "${FACTORY_CERT}" -days ${DAYS} \
     -extfile "${CA_EXT_FILE}" 2>/dev/null
 
 # 验证证书是否包含 CA 扩展

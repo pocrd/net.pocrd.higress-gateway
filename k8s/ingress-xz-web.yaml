@@ -20,4 +20,4 @@ spec:
           service:
             name: xiaozhi-web-static
             port:
-              number: 8085
+              number: 8084
